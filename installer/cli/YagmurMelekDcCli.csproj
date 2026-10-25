@@ -12,7 +12,7 @@
 <Title>YagmurMelek DC CLI</Title>
 <Description>YagmurMelek DC Windows Command-Line Installer</Description>
 <Company>YagmurMelek DC</Company>
-<Version>0.5.3</Version>
+<Version>0.5.5</Version>
 <Copyright>YagmurMelek DC contributors; GPL-3.0-or-later</Copyright>
 <PublishSingleFile>true</PublishSingleFile>
 <SelfContained>true</SelfContained>
@@ -25,6 +25,7 @@
   <Compile Include="../SelfTest.cs" Link="SelfTest.cs" />
   <EmbeddedResource Include="../payload.zip" Link="payload.zip" />
   <EmbeddedResource Include="../bootstrap.cjs" Link="bootstrap.cjs" />
+  <EmbeddedResource Include="../defaultSettings.json" Link="defaultSettings.json" />
   <EmbeddedResource Include="../assets/yagmurmelekdc.ico" Link="assets/yagmurmelekdc.ico" />
   <EmbeddedResource Include="../assets/yagmurmelekdc.png" Link="assets/yagmurmelekdc.png" />
 </ItemGroup>

@@ -140,17 +140,29 @@ function Panel() {
         <label>Ses efekti <select value={mode} onChange={event => { mode = event.target.value; worklet?.port.postMessage(mode); emit(); }}>
             <option value="normal">Normal</option><option value="robot">Robot</option><option value="bright">İnce / Kadınsı</option><option value="deep">Kalın</option><option value="chipmunk">Helyum</option><option value="monster">Canavar</option><option value="alien">Uzaylı</option><option value="radio">Telsiz</option><option value="echo">Yankı</option>
         </select></label>
-        <p><label>Fiziksel mikrofon <select value={mic} disabled={busy || !!context} onChange={event => setMic(event.target.value)}><option value="">Mikrofon seç</option>{devices.filter(device => device.kind === "audioinput" && !["default", "communications"].includes(device.deviceId) && !isVirtualDevice(device.label)).map(device => <option key={device.deviceId} value={device.deviceId}>{device.label || "Mikrofon"}</option>)}</select></label></p>
-        <p><label>Sanal çıkış <select value={sink} disabled={busy || !!context} onChange={event => setSink(event.target.value)}><option value="">CABLE Input seç</option>{devices.filter(device => device.kind === "audiooutput" && /\bCABLE(?:-[AB])? Input\b/i.test(device.label)).map(device => <option key={device.deviceId} value={device.deviceId}>{device.label}</option>)}</select></label></p>
+        <p><label>Fiziksel mikrofon <select value={mic} disabled={busy || !!context} onChange={event => setMic(event.target.value)}><option value="">Mikrofon seç</option>{devices.filter(device => device && device.kind === "audioinput" && !["default", "communications"].includes(device.deviceId) && !isVirtualDevice(device.label)).map(device => <option key={device.deviceId || device.label || Math.random().toString()} value={device.deviceId}>{device.label || "Mikrofon"}</option>)}</select></label></p>
+        <p><label>Sanal çıkış <select value={sink} disabled={busy || !!context} onChange={event => setSink(event.target.value)}><option value="">CABLE Input seç</option>{devices.filter(device => device && device.kind === "audiooutput" && Boolean(device.label) && /\bCABLE(?:-[AB])? Input\b/i.test(device.label)).map(device => <option key={device.deviceId || device.label || Math.random().toString()} value={device.deviceId}>{device.label}</option>)}</select></label></p>
         <div className="yagmurmelek-tools-actions"><button disabled={busy || !!context} onClick={() => void refresh()}>Aygıtları yenile</button><button disabled={busy || !!context || !mic || !sink} onClick={() => void start(mic, sink)}>Efekti aç ve ses ayarlarını uygula</button><button disabled={busy} onClick={() => void stop()}>Kapat ve ayarları geri yükle</button></div>
-        <p><label>Dinleme çıkışı <select value={monitorSink} disabled={monitoring || monitorPending} onChange={event => { monitorSink = event.target.value; emit(); }}><option value="">Kulaklık / hoparlör seç</option>{devices.filter(isMonitorOutput).map(device => <option key={device.deviceId} value={device.deviceId}>{device.label}</option>)}</select></label></p>
+        <p><label>Dinleme çıkışı <select value={monitorSink} disabled={monitoring || monitorPending} onChange={event => { monitorSink = event.target.value; emit(); }}><option value="">Kulaklık / hoparlör seç</option>{devices.filter(isMonitorOutput).map(device => <option key={device.deviceId || device.label || Math.random().toString()} value={device.deviceId}>{device.label}</option>)}</select></label></p>
         <p><label><input type="checkbox" checked={monitoring} disabled={!context || busy || monitorPending || !monitorSink} onChange={event => void toggleMonitor(event.target.checked)} /> Kendi sesimi duy</label></p>
         <label>Dinleme sesi · %{Math.round(monitorVolume * 100)} <input type="range" min="0" max="100" value={Math.round(monitorVolume * 100)} onChange={event => { monitorVolume = Number(event.target.value) / 100; monitor.setVolume(monitorVolume); emit(); }} /></label>
         <p><small>Yankı oluşmaması için kulaklık kullan. Dinleme sesi yalnızca senin duyduğun seviyeyi değiştirir. Mikrofon susturulunca kendi sesin de kesilir.</small></p>
         <p role="status">{status}</p><small>Menüyü kapatınca efekt devam eder. Mikrofon susturma düğmen çalışır. Ses kanalından çıkınca efekt durur.</small>
     </div>;
 }
-function openPanel() { openModal(props => <Modal {...props} title="YagmurMelekVoice"><Panel /></Modal>, { modalKey: "yagmurmelek-voice" }); }
+function openPanel() {
+    closeModal("yagmurmelek-extras");
+    closeModal("yagmurmelek-voice");
+    openModal(props => (
+        <ErrorBoundary>
+            <Modal {...props} title="YagmurMelekVoice">
+                <ErrorBoundary>
+                    <Panel />
+                </ErrorBoundary>
+            </Modal>
+        </ErrorBoundary>
+    ), { modalKey: "yagmurmelek-voice" });
+}
 function VoiceButton(props: { nameplate?: unknown; }) {
     React.useSyncExternalStore(subscribe, () => revision);
     return <Button tooltipText={context ? "YagmurMelekVoice · Efekt açık" : "YagmurMelekVoice · Ses değiştir"} icon={Icon} plated={props?.nameplate != null} onClick={openPanel} />;
@@ -164,6 +176,6 @@ export default definePlugin({
     VoiceButton: ErrorBoundary.wrap(VoiceButton, { noop: true }),
     settingsAboutComponent: Panel,
     toolboxActions: { YagmurMelekVoice: openPanel },
-    start() { MediaEngineStore.addChangeListener(checkState); SelectedChannelStore.addChangeListener(checkState); UserStore.addChangeListener(checkState); navigator.mediaDevices.addEventListener("devicechange", monitorDevicesChanged); },
-    stop() { MediaEngineStore.removeChangeListener(checkState); SelectedChannelStore.removeChangeListener(checkState); UserStore.removeChangeListener(checkState); navigator.mediaDevices.removeEventListener("devicechange", monitorDevicesChanged); closeModal("yagmurmelek-voice"); void stop(); }
+    start() { MediaEngineStore.addChangeListener(checkState); SelectedChannelStore.addChangeListener(checkState); UserStore.addChangeListener(checkState); navigator.mediaDevices?.addEventListener?.("devicechange", monitorDevicesChanged); },
+    stop() { MediaEngineStore.removeChangeListener(checkState); SelectedChannelStore.removeChangeListener(checkState); UserStore.removeChangeListener(checkState); navigator.mediaDevices?.removeEventListener?.("devicechange", monitorDevicesChanged); closeModal("yagmurmelek-voice"); void stop(); }
 });
