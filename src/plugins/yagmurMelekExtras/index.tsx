@@ -34,7 +34,19 @@ function Panel({ initialChannel, address }: { initialChannel?: string; address?:
     const [tab, setTab] = React.useState(address ? "ocr" : "audio");
     return <div className="yagmurmelek-tools"><div className="yagmurmelek-tools-actions"><button onClick={() => setTab("audio")}>Ses araçları</button>{options.zoom && <button onClick={() => setTab("zoom")}>Yayın büyüt</button>}{options.ocr && <button onClick={() => setTab("ocr")}>Görselden yazı</button>}{options.chat && <button onClick={() => { const id = SelectedChannelStore.getChannelId(); if (id) { closeModal("yagmurmelek-extras"); openSideChat(id); } }}>Bu kanalı yan panelde aç</button>}</div>{tab === "audio" && <AudioTools meter={options.meter} guard={options.guard} wait={options.alarm} initialChannel={initialChannel} />}{tab === "zoom" && options.zoom && <Zoom />}{tab === "ocr" && options.ocr && <OCR address={address} />}</div>;
 }
-function openPanel(initialChannel?: string, address?: string) { closeModal("yagmurmelek-extras"); openModal(props => <Modal {...props} title="YagmurMelekDc · Ek araçlar"><Panel initialChannel={initialChannel} address={address} /></Modal>, { modalKey: "yagmurmelek-extras" }); }
+function openPanel(initialChannel?: string, address?: string) {
+    closeModal("yagmurmelek-voice");
+    closeModal("yagmurmelek-extras");
+    openModal(props => (
+        <ErrorBoundary>
+            <Modal {...props} title="YagmurMelekDc · Ek araçlar">
+                <ErrorBoundary>
+                    <Panel initialChannel={initialChannel} address={address} />
+                </ErrorBoundary>
+            </Modal>
+        </ErrorBoundary>
+    ), { modalKey: "yagmurmelek-extras" });
+}
 function ExtraButton(props: { nameplate?: unknown; }) { return <Button tooltipText="YagmurMelekDc · Ek araçlar" icon={Icon} plated={props?.nameplate != null} onClick={() => openPanel()} />; }
 export default definePlugin({
     name: "YagmurMelekExtras",

@@ -20,7 +20,7 @@ function Wait-Result($operation, $resultType) {
     $task.Wait()
     $task.Result
 }
-$file = Wait-Result ([Windows.Storage.StorageFile]::GetFileFromPathAsync($env:HYPERDC_OCR_FILE)) ([Windows.Storage.StorageFile])
+$file = Wait-Result ([Windows.Storage.StorageFile]::GetFileFromPathAsync($env:YAGMURDC_OCR_FILE)) ([Windows.Storage.StorageFile])
 $stream = Wait-Result ($file.OpenAsync([Windows.Storage.FileAccessMode]::Read)) ([Windows.Storage.Streams.IRandomAccessStream])
 try {
     $decoder = Wait-Result ([Windows.Graphics.Imaging.BitmapDecoder]::CreateAsync($stream)) ([Windows.Graphics.Imaging.BitmapDecoder])

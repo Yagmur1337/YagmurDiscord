@@ -26,7 +26,7 @@ export async function recognize(_: unknown, data: string) {
         const file = join(directory, "selection.png"); await writeFile(file, bytes);
         return await new Promise<string>((resolve, reject) => {
             execFile(join(process.env.SystemRoot || "C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe"), ["-NoProfile", "-NonInteractive", "-EncodedCommand", Buffer.from(ocrScript, "utf16le").toString("base64")], {
-                windowsHide: true, timeout: 30000, maxBuffer: 512 * 1024, encoding: "utf8", env: { ...process.env, HYPERDC_OCR_FILE: file }
+                windowsHide: true, timeout: 30000, maxBuffer: 512 * 1024, encoding: "utf8", env: { ...process.env, YAGMURDC_OCR_FILE: file }
             }, (error, stdout) => error ? reject(Error("Windows yazıyı okuyamadı. Windows dil ayarlarında OCR dil paketinin kurulu olduğunu kontrol et.")) : resolve(stdout.trim()));
         });
     } finally { if (directory) await rm(directory, { recursive: true, force: true }); running = false; }

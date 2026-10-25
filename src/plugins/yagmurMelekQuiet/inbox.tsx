@@ -95,7 +95,7 @@ async function markRead(ids: string[]) {
     });
 }
 export function YagmurMelekLogo() {
-    return <svg className="yagmurmelek-inbox-logo" aria-hidden="true" viewBox="0 0 256 256"><rect x="8" y="8" width="240" height="240" rx="54" fill="#141414" /><path d="M72 45h43l-13 61h40l13-61h43l-35 166h-43l14-64H94l-14 64H37z" fill="#fc7045" /><path d="M187 184h30v27h-36z" fill="#eee8de" /></svg>;
+    return <svg className="yagmurmelek-inbox-logo" aria-hidden="true" viewBox="0 0 256 256"><rect x="8" y="8" width="240" height="240" rx="54" fill="#141414" /><path d="M60 45h45l43 73 47-73h43l-70 100v66h-44v-66z" fill="#fc7045" /><path d="M175 184h30v27h-36z" fill="#eee8de" /></svg>;
 }
 function Inbox({ close }: { close: () => void; }) {
     const rows = useInbox();

@@ -15,7 +15,7 @@ internal record DiscordTarget(string Name, string Path)
 internal static class InstallEngine
 {
     public const string Marker = "YAGMURMELEK_DC_INSTALLER_V1";
-    public const string Version = "0.5.3";
+    public const string Version = "0.5.5";
     public static readonly string DataRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "YagmurMelekDc");
     public static string ResourcePath(string app) => Path.Combine(Path.GetFullPath(app), "resources");
     public static void CheckPath(string path)
@@ -127,6 +127,18 @@ internal static class InstallEngine
         CheckPath(stateFile); CheckPath(stateFile + ".tmp");
         File.WriteAllText(stateFile + ".tmp", JsonSerializer.Serialize(new { current = Path.GetFileName(target), previous = (string?)null, pending = false, attempted = false }));
         File.Move(stateFile + ".tmp", stateFile, true);
+        var settingsDir = Path.Combine(dataRoot, "settings");
+        var settingsFile = Path.Combine(settingsDir, "settings.json");
+        if (!File.Exists(settingsFile))
+        {
+            Directory.CreateDirectory(settingsDir);
+            using var defStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("YagmurMelekDCInstaller.defaultSettings.json");
+            if (defStream != null)
+            {
+                using var defReader = new StreamReader(defStream);
+                File.WriteAllText(settingsFile, defReader.ReadToEnd());
+            }
+        }
         return loader;
     }
     public static void Install(string app, string patcher, string data, Action? beforeCommit = null)

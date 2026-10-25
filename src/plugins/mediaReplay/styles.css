@@ -1,0 +1,30 @@
+.vc-replay-button {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    margin: 0 2px;
+    color: var(--interactive-normal, #b5bac1);
+    transition: color 0.15s ease, transform 0.15s ease, background-color 0.15s ease;
+    border-radius: 4px;
+    user-select: none;
+}
+
+.vc-replay-button:hover {
+    color: var(--interactive-hover, #dbdee1);
+    background-color: var(--background-modifier-hover, rgba(255, 255, 255, 0.07));
+}
+
+.vc-replay-button:active {
+    transform: scale(0.92);
+}
+
+.vc-replay-button.active {
+    color: #57f287 !important;
+}
+
+.vc-replay-button.active:hover {
+    color: #79f59f !important;
+    background-color: rgba(87, 242, 135, 0.15);
+}

@@ -14,19 +14,19 @@ export async function readAttachment(_: unknown, address: string): Promise<Uint8
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30000);
     try {
-        const response = await net.fetch(url.href, { redirect: "error", credentials: "omit", signal: controller.signal });
-        if (!response.ok) throw new Error(`MP3 indirilemedi (HTTP ${response.status}). Mesajı yeniden açıp dene.`);
-        const limit = 25 * 1024 * 1024;
-        if (Number(response.headers.get("content-length")) > limit) throw new Error("Görselleştirici sınırı: 25 MB.");
+        const response = await net.fetch(url.href, { redirect: "follow", credentials: "omit", signal: controller.signal });
+        if (!response.ok) throw new Error(`Ses dosyası indirilemedi (HTTP ${response.status}). Mesajı yeniden açıp dene.`);
+        const limit = 50 * 1024 * 1024;
+        if (Number(response.headers.get("content-length")) > limit) throw new Error("Görselleştirici sınırı: 50 MB.");
         const reader = response.body?.getReader();
-        if (!reader) throw new Error("MP3 verisi alınamadı.");
+        if (!reader) throw new Error("Ses verisi alınamadı.");
         const chunks: Uint8Array[] = [];
         let size = 0;
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
             size += value.length;
-            if (size > limit) { await reader.cancel(); throw new Error("Görselleştirici sınırı: 25 MB."); }
+            if (size > limit) { await reader.cancel(); throw new Error("Görselleştirici sınırı: 50 MB."); }
             chunks.push(value);
         }
         const bytes = new Uint8Array(size);

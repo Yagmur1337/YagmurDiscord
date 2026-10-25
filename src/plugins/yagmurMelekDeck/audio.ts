@@ -12,7 +12,7 @@ import { claimYagmurMelekMicrophone, releaseYagmurMelekMicrophone } from "@utils
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-export const isVirtualDevice = (label: string) => /cable|voicemeeter|virtual|blackhole/i.test(label);
+export const isVirtualDevice = (label?: string) => typeof label === "string" && /cable|voicemeeter|virtual|blackhole/i.test(label);
 
 
 
