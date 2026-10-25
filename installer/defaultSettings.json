@@ -652,6 +652,9 @@
         },
         "MediaReplay": {
             "enabled": true
+        },
+        "YagmurMelekNitroEffects": {
+            "enabled": true
         }
     },
     "uiElements": {

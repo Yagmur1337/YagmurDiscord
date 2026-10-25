@@ -1,24 +1,45 @@
 <Project Sdk="Microsoft.NET.Sdk">
-<PropertyGroup>
-<OutputType>WinExe</OutputType>
-<TargetFramework>net9.0-windows</TargetFramework>
-<UseWindowsForms>true</UseWindowsForms>
-<ImplicitUsings>enable</ImplicitUsings>
-<Nullable>enable</Nullable>
-<ApplicationIcon>assets/yagmurmelekdc.ico</ApplicationIcon>
-<AssemblyName>YagmurMelekDcInstaller</AssemblyName>
-<RootNamespace>YagmurMelekDCInstaller</RootNamespace>
-<Product>YagmurMelek DC Installer</Product>
-<Title>YagmurMelek DC Installer</Title>
-<Description>YagmurMelek DC Windows installer</Description>
-<Company>YagmurMelek DC</Company>
-<Version>0.5.5</Version>
-<Copyright>YagmurMelek DC contributors; GPL-3.0-or-later</Copyright>
-<PublishSingleFile>true</PublishSingleFile>
-<SelfContained>true</SelfContained>
-<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-<DebugType>none</DebugType>
-<DefaultItemExcludes>$(DefaultItemExcludes);cli/**</DefaultItemExcludes>
-</PropertyGroup>
-<ItemGroup><EmbeddedResource Include="payload.zip"/><EmbeddedResource Include="bootstrap.cjs"/><EmbeddedResource Include="defaultSettings.json"/><EmbeddedResource Include="assets/yagmurmelekdc.ico"/><EmbeddedResource Include="assets/yagmurmelekdc.png"/></ItemGroup>
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ApplicationIcon>assets/yagmurmelekdc.ico</ApplicationIcon>
+    <AssemblyName>YagmurMelekDcInstaller</AssemblyName>
+    <RootNamespace>YagmurMelekDCInstaller</RootNamespace>
+
+    <!-- Şirket ve Sahip Bilgileri -->
+    <Company>Yagmures Holding</Company>
+    <Authors>Yagmur Discord, Yagmures Holding</Authors>
+    <Product>Yagmur Discord Installer</Product>
+    <Title>Yagmur Discord Kurulum Yöneticisi</Title>
+    <AssemblyTitle>Yagmur Discord Kurulum Yöneticisi</AssemblyTitle>
+    <Description>Yagmur Discord Resmi Kurulum Programı - Yagmures Holding</Description>
+    <Copyright>(c) 2026 Yagmures Holding. Tum haklari saklidir.</Copyright>
+    <Trademark>Yagmures Holding - Yagmur Discord</Trademark>
+    <PackageProjectUrl>https://github.com/Yagmur1337/YagmurDiscord</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Yagmur1337/YagmurDiscord</RepositoryUrl>
+    <PackageId>YagmurDiscord.Installer</PackageId>
+    <NeutralLanguage>tr-TR</NeutralLanguage>
+
+    <!-- Sürüm Bilgileri -->
+    <Version>0.5.5</Version>
+    <FileVersion>0.5.5.0</FileVersion>
+    <AssemblyVersion>0.5.5.0</AssemblyVersion>
+    <InformationalVersion>0.5.5 - Yagmures Holding</InformationalVersion>
+
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <DebugType>none</DebugType>
+    <DefaultItemExcludes>$(DefaultItemExcludes);cli/**</DefaultItemExcludes>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="payload.zip"/>
+    <EmbeddedResource Include="bootstrap.cjs"/>
+    <EmbeddedResource Include="defaultSettings.json"/>
+    <EmbeddedResource Include="assets/yagmurmelekdc.ico"/>
+    <EmbeddedResource Include="assets/yagmurmelekdc.png"/>
+  </ItemGroup>
 </Project>
