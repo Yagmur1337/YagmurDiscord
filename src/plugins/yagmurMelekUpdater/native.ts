@@ -14,7 +14,7 @@ import { basename, dirname, join } from "path";
 import { decodePackage, newerVersion } from "./package";
 import { HYPER_VERSION } from "./version";
 
-const repo = "https://api.github.com/repos/YagmurMelek0316/YagmurDiscord";
+const repo = "https://api.github.com/repos/Yagmur1337/YagmurDiscord";
 const assetName = "YagmurMelekDc-update.json";
 const statePath = join(DATA_DIR, "update-state.json");
 let busy = false;
@@ -83,7 +83,7 @@ export async function installUpdate() {
         const { version, asset } = await latest();
         if (!newerVersion(version, HYPER_VERSION) || !asset) throw Error("Yeni güncelleme paketi bulunamadı.");
         if (!/^sha256:[a-f0-9]{64}$/.test(asset.digest) || !Number.isInteger(asset.size) || asset.size > 45 * 1024 * 1024
-            || asset.browser_download_url !== `https://github.com/YagmurMelek0316/YagmurDiscord/releases/download/v${version}/${assetName}`) throw Error("Yayın paketi doğrulanamıyor.");
+            || asset.browser_download_url !== `https://github.com/Yagmur1337/YagmurDiscord/releases/download/v${version}/${assetName}`) throw Error("Yayın paketi doğrulanamıyor.");
         const bytes = await download(asset.browser_download_url, 45 * 1024 * 1024);
         if (bytes.length !== asset.size) throw Error("Güncelleme indirmesi eksik.");
         const digest = asset.digest.slice(7);

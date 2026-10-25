@@ -60,7 +60,7 @@ internal sealed class InstallerForm : Form
         status.ForeColor = ForeColor; status.SetBounds(24, 410, 652, 48); Controls.Add(status);
         var divider = new Panel { Bounds = new Rectangle(0, 480, 700, 1), BackColor = Color.FromArgb(48, 55, 67) }; Controls.Add(divider);
         var license = new LinkLabel { Text = "Lisans ve kaynak kodu", LinkColor = Color.FromArgb(155, 165, 183), Location = new Point(24, 509), Size = new Size(180, 24), Font = new Font("Segoe UI", 9) };
-        license.LinkClicked += (_, _) => Process.Start(new ProcessStartInfo("https://github.com/YagmurMelek0316/YagmurDiscord") { UseShellExecute = true }); Controls.Add(license);
+        license.LinkClicked += (_, _) => Process.Start(new ProcessStartInfo("https://github.com/Yagmur1337/YagmurDiscord") { UseShellExecute = true }); Controls.Add(license);
         StyleButton(remove, "Kaldır", new Rectangle(412, 500, 120, 36), false); remove.Click += async (_, _) => await Execute(true);
         StyleButton(install, "Yükle", new Rectangle(546, 500, 130, 36), true); install.Click += async (_, _) => await Execute(false);
         targets.SelectedIndexChanged += (_, _) => { path.Text = (targets.SelectedItem as DiscordTarget)?.Path ?? ""; UpdateButtons(); };
