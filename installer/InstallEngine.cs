@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO.Compression;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -5,6 +6,11 @@ using System.Text;
 using System.Text.Json;
 
 namespace YagmurMelekDcInstaller;
+
+internal record DiscordTarget(string Name, string Path)
+{
+    public override string ToString() => Name;
+}
 
 internal static class InstallEngine
 {
@@ -18,6 +24,45 @@ internal static class InstallEngine
             if (dir.Exists && dir.Attributes.HasFlag(FileAttributes.ReparsePoint)) throw new IOException("Bağlantılı klasörlere kurulum desteklenmiyor.");
     }
     public static bool Owned(string path) => File.Exists(path) && new FileInfo(path).Length < 65536 && Encoding.UTF8.GetString(File.ReadAllBytes(path)).Contains(Marker, StringComparison.Ordinal);
+
+    public static int CloseDiscordProcesses()
+    {
+        var count = 0;
+        foreach (var proc in Process.GetProcesses())
+        {
+            try
+            {
+                if (proc.ProcessName.StartsWith("Discord", StringComparison.OrdinalIgnoreCase))
+                {
+                    proc.Kill();
+                    proc.WaitForExit(3000);
+                    count++;
+                }
+            }
+            catch { }
+            finally { proc.Dispose(); }
+        }
+        if (count > 0)
+        {
+            System.Threading.Thread.Sleep(600);
+        }
+        return count;
+    }
+
+    public static List<DiscordTarget> FindTargets()
+    {
+        var list = new List<DiscordTarget>();
+        foreach (var name in new[] { "Discord", "DiscordPTB", "DiscordCanary", "DiscordDevelopment" })
+        {
+            var root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), name);
+            if (!Directory.Exists(root)) continue;
+            foreach (var dir in Directory.GetDirectories(root, "app-*").OrderByDescending(d => System.Version.TryParse(Path.GetFileName(d)[4..], out var v) ? v : new System.Version()))
+                if (File.Exists(Path.Combine(dir, "resources", "app.asar")))
+                    list.Add(new DiscordTarget(name + " · " + Path.GetFileName(dir), dir));
+        }
+        return list;
+    }
+
     public static void Validate(string app)
     {
         CheckPath(app);
@@ -106,6 +151,12 @@ internal static class InstallEngine
             throw;
         }
         finally { if (File.Exists(temp)) File.Delete(temp); }
+    }
+    public static void Repair(string app, string? destinationRoot = null)
+    {
+        Validate(app);
+        var loader = ExtractPayload(destinationRoot);
+        Install(app, loader, destinationRoot ?? DataRoot);
     }
     public static void Uninstall(string app)
     {
