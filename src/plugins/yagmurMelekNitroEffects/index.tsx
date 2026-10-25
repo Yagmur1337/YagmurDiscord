@@ -15,7 +15,7 @@ import { copyWithToast } from "@utils/discord";
 import { Margins } from "@utils/margins";
 import { classes } from "@utils/misc";
 import definePlugin, { OptionType } from "@utils/types";
-import { Button, ColorPicker, Forms, React, Text, TextInput, UserProfileStore, UserStore, useState } from "@webpack/common";
+import { Button, ColorPicker, FluxDispatcher, Forms, React, Text, TextInput, UserProfileStore, UserStore, useState } from "@webpack/common";
 
 export function encode3y3(primary: number, accent: number): string {
     const message = `[#${primary.toString(16).padStart(6, "0")},#${accent.toString(16).padStart(6, "0")}]`;
@@ -246,7 +246,25 @@ export default definePlugin({
                 }
             ]
         },
-        // 3. Profile update submit hook: intercept to auto-encode 3y3 and save banner
+        // 3. Module 207803: Intercept try-it-out changes in Discord profile edit UI (Screenshot 3)
+        {
+            find: 'type:"USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_THEME_COLORS"',
+            replacement: [
+                {
+                    match: /function (\i)\((\i)\)\{(\i\.h\.dispatch\(\{type:"USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_THEME_COLORS",themeColors:\2\}\))/g,
+                    replace: "function $1($2){$self.onSetTryItOutThemeColors($2);$3"
+                },
+                {
+                    match: /function (\i)\((\i)\)\{(\i\.h\.dispatch\(\{type:"USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_BANNER",banner:\2\}\))/g,
+                    replace: "function $1($2){$self.onSetTryItOutBanner($2);$3"
+                },
+                {
+                    match: /function (\i)\((\i)\)\{(\i\.h\.dispatch\(\{type:"USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_AVATAR_DECORATION",avatarDecoration:\2\}\))/g,
+                    replace: "function $1($2){$self.onSetTryItOutAvatarDecoration($2);$3"
+                }
+            ]
+        },
+        // 4. Profile update submit hook: intercept to auto-encode 3y3 and save banner
         {
             find: "USER_PROFILE_UPDATE_START",
             replacement: [
@@ -258,13 +276,94 @@ export default definePlugin({
         }
     ],
 
-    isCurrentUser(userId?: string): boolean {
-        if (!userId) return false;
+    isCurrentUser(userOrId?: any): boolean {
+        if (!userOrId) return true;
         try {
             const current = UserStore.getCurrentUser();
-            return current?.id === userId;
+            const id = typeof userOrId === "string" ? userOrId : userOrId?.id;
+            return !id || current?.id === id;
         } catch {
-            return false;
+            return true;
+        }
+    },
+
+    onSetTryItOutThemeColors(colors: [number, number] | null) {
+        try {
+            const currentUser = UserStore.getCurrentUser();
+            if (!currentUser) return;
+
+            if (Array.isArray(colors) && colors[0] != null && colors[1] != null) {
+                settings.store.primaryColor = colors[0];
+                settings.store.accentColor = colors[1];
+                const encoded = encode3y3(colors[0], colors[1]);
+                let bio = UserProfileStore.getUserProfile(currentUser.id)?.bio ?? "";
+                bio = strip3y3(bio);
+                const newBio = (bio.length > 0 ? bio + " " : "") + encoded;
+
+                FluxDispatcher.dispatch({
+                    type: "USER_PROFILE_SETTINGS_SET_PENDING_CHANGES",
+                    pendingBio: newBio,
+                    pendingThemeColors: colors
+                });
+            } else if (colors === null) {
+                settings.store.primaryColor = 0;
+                settings.store.accentColor = 0;
+                let bio = UserProfileStore.getUserProfile(currentUser.id)?.bio ?? "";
+                const newBio = strip3y3(bio);
+
+                FluxDispatcher.dispatch({
+                    type: "USER_PROFILE_SETTINGS_SET_PENDING_CHANGES",
+                    pendingBio: newBio,
+                    pendingThemeColors: null
+                });
+            }
+        } catch (err) {
+            console.error("[YagmurMelekNitroEffects] onSetTryItOutThemeColors error:", err);
+        }
+    },
+
+    onSetTryItOutBanner(banner: any) {
+        try {
+            if (banner) {
+                const bannerUri = typeof banner === "object" && banner.imageUri
+                    ? banner.imageUri
+                    : (typeof banner === "string" ? banner : null);
+                if (bannerUri) {
+                    settings.store.customBanner = bannerUri;
+                }
+                FluxDispatcher.dispatch({
+                    type: "USER_PROFILE_SETTINGS_SET_PENDING_CHANGES",
+                    pendingBanner: banner
+                });
+            } else if (banner === null) {
+                settings.store.customBanner = "";
+                FluxDispatcher.dispatch({
+                    type: "USER_PROFILE_SETTINGS_SET_PENDING_CHANGES",
+                    pendingBanner: null
+                });
+            }
+        } catch (err) {
+            console.error("[YagmurMelekNitroEffects] onSetTryItOutBanner error:", err);
+        }
+    },
+
+    onSetTryItOutAvatarDecoration(decoration: any) {
+        try {
+            if (decoration?.skuId) {
+                settings.store.avatarDecorationSkuId = String(decoration.skuId);
+                FluxDispatcher.dispatch({
+                    type: "USER_PROFILE_SETTINGS_SET_PENDING_CHANGES",
+                    pendingAvatarDecoration: decoration
+                });
+            } else if (decoration === null) {
+                settings.store.avatarDecorationSkuId = "";
+                FluxDispatcher.dispatch({
+                    type: "USER_PROFILE_SETTINGS_SET_PENDING_CHANGES",
+                    pendingAvatarDecoration: null
+                });
+            }
+        } catch (err) {
+            console.error("[YagmurMelekNitroEffects] onSetTryItOutAvatarDecoration error:", err);
         }
     },
 
