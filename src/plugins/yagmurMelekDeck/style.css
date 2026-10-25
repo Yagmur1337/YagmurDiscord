@@ -1,0 +1,201 @@
+.yagmurmelek-deck {
+    display: grid;
+    gap: 14px;
+    padding: 20px;
+    color: #eee;
+    background: #111317;
+    border-radius: 16px;
+   
+}
+
+.yagmurmelek-deck-kicker {
+    color: #ff9a58;
+    font-size: 12px;
+    letter-spacing: 2px;
+   
+}
+
+.yagmurmelek-deck-title {
+    overflow-wrap: anywhere;
+   
+}
+
+.yagmurmelek-deck canvas {
+    width: 100%;
+    height: 140px;
+    background: #191c22;
+    border-radius: 10px;
+   
+}
+
+.yagmurmelek-deck label {
+    display: grid;
+    gap: 8px;
+   
+}
+
+.yagmurmelek-deck input[type="range"] {
+    width: 100%;
+    accent-color: #ff914d;
+   
+}
+
+.yagmurmelek-deck input[type="checkbox"] {
+    accent-color: #ff914d;
+   
+}
+
+.yagmurmelek-deck button, .yagmurmelek-deck select, .yagmurmelek-deck-file {
+    padding: 10px 14px;
+    border: 1px solid #454951;
+    border-radius: 8px;
+    background: #23262c;
+    color: #fff;
+   
+}
+
+.yagmurmelek-deck button {
+    cursor: pointer;
+   
+}
+
+.yagmurmelek-deck button:disabled {
+    opacity: .5;
+    cursor: default;
+   
+}
+
+.yagmurmelek-deck-row {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    flex-wrap: wrap;
+   
+}
+
+.yagmurmelek-deck-row label, .yagmurmelek-deck .yagmurmelek-deck-send {
+    display: flex;
+    align-items: center;
+   
+}
+
+.yagmurmelek-deck .yagmurmelek-deck-send {
+    padding: 14px;
+    border: 1px solid #ff914d;
+    border-radius: 8px;
+   
+}
+
+.yagmurmelek-deck p, .yagmurmelek-deck details {
+    font-size: 14px;
+    line-height: 1.5;
+   
+}
+
+.yagmurmelek-deck :focus-visible {
+    outline: 2px solid #ffae76;
+    outline-offset: 3px;
+   
+}
+
+.yagmurmelek-deck-connection {
+    display: block;
+    min-width: 0;
+    width: 100%;
+}
+
+.yagmurmelek-deck-panel-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    text-align: left;
+}
+
+.yagmurmelek-deck-panel-display {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.yagmurmelek-deck-panel-display canvas {
+    display: block;
+    width: 100%;
+    height: 28px;
+}
+
+.yagmurmelek-deck-panel-button > svg {
+    flex-shrink: 0;
+    color: #ff9a58;
+}
+
+.yagmurmelek-deck-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgb(0 0 0 / 65%);
+}
+
+.yagmurmelek-deck-dialog {
+    width: min(560px, 100%);
+    max-height: calc(100vh - 40px);
+    overflow: auto;
+    border-radius: 16px;
+    box-shadow: 0 16px 60px #0008;
+}
+
+.yagmurmelek-deck-dialog .yagmurmelek-deck {
+    border: 0;
+    margin: 0;
+    min-width: 0;
+}
+
+.yagmurmelek-deck .yagmurmelek-deck-viz-switch {
+    display: flex;
+    align-items: center;
+}
+
+.yagmurmelek-deck-panel-button:focus-visible {
+    outline: 2px solid #ff9a58;
+    outline-offset: 2px;
+}
+
+.yagmurmelek-deck-effects {
+    display: grid;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid #fc704578;
+    border-radius: 12px;
+    background: linear-gradient(120deg, #fc704514, #191c22);
+}
+
+.yagmurmelek-deck-effects > label:first-child, .yagmurmelek-deck-bass-scale {
+    display: flex;
+    justify-content: space-between;
+}
+
+.yagmurmelek-deck-effects strong {
+    color: #ff9b67;
+    letter-spacing: 1px;
+}
+
+.yagmurmelek-deck-bass-scale {
+    font-size: 11px;
+    color: #b7b9c0;
+}
+
+.yagmurmelek-deck-effects .yagmurmelek-deck-noise {
+    display: flex;
+    align-items: center;
+    margin-top: 6px;
+}

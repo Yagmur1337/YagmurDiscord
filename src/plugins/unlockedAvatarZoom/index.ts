@@ -1,0 +1,36 @@
+/*
+ * Vencord, a Discord client mod
+ * Copyright (c) 2024 Vendicated and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+import { definePluginSettings } from "@api/Settings";
+import { Devs } from "@utils/constants";
+import { yagmurMelekTranslate } from "@utils/yagmurMelekLanguage";
+import definePlugin, { makeRange, OptionType } from "@utils/types";
+
+const settings = definePluginSettings({
+    zoomMultiplier: {
+        type: OptionType.SLIDER,
+        description: yagmurMelekTranslate("Zoom multiplier"),
+        markers: makeRange(2, 16),
+        default: 4,
+    },
+});
+
+export default definePlugin({
+    name: "UnlockedAvatarZoom",
+    description: yagmurMelekTranslate("Allows you to zoom in further in the image crop tool when changing your avatar"),
+    tags: ["Media", "Utility"],
+    authors: [Devs.nakoyasha],
+    settings,
+    patches: [
+        {
+            find: "#{intl::AVATAR_UPLOAD_EDIT_MEDIA}",
+            replacement: {
+                match: /maxValue:\d/,
+                replace: "maxValue:$self.settings.store.zoomMultiplier",
+            }
+        }
+    ]
+});
