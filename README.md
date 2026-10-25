@@ -6,9 +6,9 @@ Vencord tabanlı Discord modifikasyonu. YagmurMelek Quiet eklentisi ve YagmurMel
 
 
 
-[Web sitesi](https://yagmurmelek0316.github.io/YagmurDiscord/) · [İndirmeler](https://github.com/YagmurMelek0316/YagmurDiscord/releases) · [Orijinal Vencord](https://github.com/Vendicated/Vencord)
+[Web sitesi](https://yagmur1337.github.io/YagmurDiscord/) · [İndirmeler](https://github.com/Yagmur1337/YagmurDiscord/releases) · [Orijinal Vencord](https://github.com/Vendicated/Vencord)
 
- YagmurMelekDc Katkıda bulunanlar: [YagmurMelek0316](https://github.com/YagmurMelek0316).
+ YagmurMelekDc Katkıda bulunanlar: [Yagmur1337](https://github.com/Yagmur1337).
 
 
 
@@ -135,7 +135,7 @@ YagmurMelek DC, Discord veya Vencord’un resmî ürünü değildir. Discord ist
 
 ## YagmurMelekDc katkıcıları
 
-- [YagmurMelek0316](https://github.com/YagmurMelek0316)
+- [Yagmur1337](https://github.com/Yagmur1337)
 
 
 ## Kendi JavaScript eklentini kullan

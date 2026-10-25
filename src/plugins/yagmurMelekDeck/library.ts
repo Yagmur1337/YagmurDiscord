@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-export const LIBRARY_BASE = "https://raw.githubusercontent.com/YagmurMelek0316/YagmurDiscord/main/music/";
+export const LIBRARY_BASE = "https://raw.githubusercontent.com/Yagmur1337/YagmurDiscord/main/music/";
 export const MAX_TRACK_BYTES = 25 * 1024 * 1024;
 
 export interface LibraryTrack { title: string; file: string; bytes: number; sha?: string; }
-export const LIBRARY_INDEX = "https://api.github.com/repos/YagmurMelek0316/YagmurDiscord/contents/music?ref=main";
+export const LIBRARY_INDEX = "https://api.github.com/repos/Yagmur1337/YagmurDiscord/contents/music?ref=main";
 
 export function validMusicFile(file: string) {
     return file.length <= 240 && !/[\\/\x00-\x1f]/.test(file) && /\.mp3$/i.test(file) && file !== ".mp3";
