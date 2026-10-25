@@ -1,0 +1,6 @@
+$cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=Yagmures Holding, O=Yagmures Holding, OU=Yagmur Discord, C=TR" -CertStoreLocation "Cert:\CurrentUser\My" -HashAlgorithm "SHA256"
+Set-AuthenticodeSignature -FilePath "release/YagmurMelekDcInstaller.exe" -Certificate $cert -TimestampServer "http://timestamp.digicert.com"
+Set-AuthenticodeSignature -FilePath "release/YagmurMelekDcCli.exe" -Certificate $cert -TimestampServer "http://timestamp.digicert.com"
+$sig = Get-AuthenticodeSignature "release/YagmurMelekDcInstaller.exe"
+Write-Host "Signature Status: $($sig.Status)"
+Write-Host "Signer Subject: $($sig.SignerCertificate.Subject)"

@@ -1,0 +1,29 @@
+/*
+ * YagmurMelekNitroEffects styles
+ */
+
+/* Hide Nitro upsell lock banners and preview buttons in profile editor */
+.nitro-preview-upsell-lock,
+[class*="upsellOverlay"],
+[class*="nitroPreviewUpsell"],
+[class*="premiumFeatureBorder"],
+[class*="upsellBadge"] {
+    display: none !important;
+}
+
+.ym-nitro-settings-card {
+    background-color: var(--background-secondary-alt);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 12px;
+    border: 1px solid var(--background-modifier-accent);
+}
+
+.ym-nitro-banner-preview {
+    width: 100%;
+    max-height: 140px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-top: 10px;
+    border: 1px solid var(--background-modifier-accent);
+}
