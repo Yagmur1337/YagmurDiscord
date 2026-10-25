@@ -175,16 +175,18 @@ function SettingsAboutComponent() {
                 />
                 <Forms.FormTitle tag="h3">{yagmurMelekTranslate("Preview")}</Forms.FormTitle>
                 <div className="vc-fpt-preview">
-                    <ProfileModal
-                        user={UserStore.getCurrentUser()}
-                        pendingThemeColors={[color1, color2]}
-                        onAvatarChange={() => { }}
-                        onBannerChange={() => { }}
-                        canUsePremiumCustomization={true}
-                        hideExampleButton={true}
-                        hideFakeActivity={true}
-                        isTryItOut={true}
-                    />
+                    <ErrorBoundary noop>
+                        <ProfileModal
+                            user={UserStore.getCurrentUser()}
+                            pendingThemeColors={[color1, color2]}
+                            onAvatarChange={() => { }}
+                            onBannerChange={() => { }}
+                            canUsePremiumCustomization={true}
+                            hideExampleButton={true}
+                            hideFakeActivity={true}
+                            isTryItOut={true}
+                        />
+                    </ErrorBoundary>
                 </div>
             </Forms.FormText>
         </section>);

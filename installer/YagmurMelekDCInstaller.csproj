@@ -18,6 +18,7 @@
 <SelfContained>true</SelfContained>
 <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
 <DebugType>none</DebugType>
+<DefaultItemExcludes>$(DefaultItemExcludes);cli/**</DefaultItemExcludes>
 </PropertyGroup>
 <ItemGroup><EmbeddedResource Include="payload.zip"/><EmbeddedResource Include="bootstrap.cjs"/><EmbeddedResource Include="defaultSettings.json"/><EmbeddedResource Include="assets/yagmurmelekdc.ico"/><EmbeddedResource Include="assets/yagmurmelekdc.png"/></ItemGroup>
 </Project>

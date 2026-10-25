@@ -5,10 +5,29 @@
  */
 
 import * as t from "@vencord/discord-types";
-import { filters, findByCodeLazy, findExportedComponentLazy, mapMangledModuleLazy } from "@webpack";
+import { filters, findByCodeLazy, findComponentByCodeLazy, mapMangledModuleLazy } from "@webpack";
 
-export const Modal: t.Modal = findExportedComponentLazy("Modal");
-export const ConfirmModal: t.ConfirmModal = findExportedComponentLazy("ConfirmModal");
+import { React } from "./react";
+
+const DiscordModal: t.Modal = findComponentByCodeLazy("actionBarInputLayout", "scrollerRef");
+
+export const Modal: t.Modal = ((props: t.ModalProps) => {
+    let safeProps = props;
+    if (props?.listProps && !props.listProps.sections) {
+        safeProps = {
+            ...props,
+            listProps: {
+                sections: [0],
+                sectionHeight: 0,
+                rowHeight: 0,
+                ...props.listProps
+            }
+        };
+    }
+    return React.createElement(DiscordModal, safeProps);
+}) as any;
+
+export const ConfirmModal: t.ConfirmModal = findComponentByCodeLazy('parentComponent:"ConfirmModal"');
 
 // Modal key: "Media Viewer Modal"
 export const openMediaModal: (props: t.MediaModalProps) => void = findByCodeLazy("hasMediaOptions", "shouldHideMediaOptions");

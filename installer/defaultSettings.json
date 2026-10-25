@@ -110,7 +110,7 @@
             "enabled": false
         },
         "ClientTheme": {
-            "enabled": false
+            "enabled": true
         },
         "ColorSighted": {
             "enabled": false
@@ -162,7 +162,7 @@
             "enabled": false
         },
         "Decor": {
-            "enabled": false
+            "enabled": true
         },
         "DisableCallIdle": {
             "enabled": true
@@ -565,7 +565,9 @@
             "enabled": false
         },
         "USRBG": {
-            "enabled": false
+            "enabled": true,
+            "nitroFirst": false,
+            "voiceBackground": true
         },
         "ValidReply": {
             "enabled": true
