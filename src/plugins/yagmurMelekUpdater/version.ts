@@ -4,4 +4,5 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-export const HYPER_VERSION = "0.5.3";
+export const YAGMURMELEK_VERSION = "0.5.3";
+export const HYPER_VERSION = YAGMURMELEK_VERSION;

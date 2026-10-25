@@ -37,13 +37,13 @@ internal sealed class InstallerForm : Form
         Text = "YagmurMelek DC Installer"; ClientSize = new Size(700, 560);
         FormBorderStyle = FormBorderStyle.FixedSingle; MaximizeBox = false; StartPosition = FormStartPosition.CenterScreen;
         BackColor = Color.FromArgb(20, 20, 20); ForeColor = Color.FromArgb(242, 238, 231); AutoScaleMode = AutoScaleMode.Dpi;
-        using var iconStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("YagmurMelekDcInstaller.assets.yagmurmelekdc.ico");
+        using var iconStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("YagmurMelekDCInstaller.assets.yagmurmelekdc.ico");
         if (iconStream != null) Icon = new Icon(iconStream);
         ClientSize = new Size(700, 560);
         BackColor = Color.FromArgb(19, 21, 26); ForeColor = Color.FromArgb(236, 239, 244);
         var header = new Panel { Dock = DockStyle.Top, Height = 92, BackColor = Color.FromArgb(26, 29, 36) };
         Controls.Add(header);
-        using var logoStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("YagmurMelekDcInstaller.assets.yagmurmelekdc.png");
+        using var logoStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("YagmurMelekDCInstaller.assets.yagmurmelekdc.png");
         if (logoStream != null) header.Controls.Add(new PictureBox { Image = new Bitmap(logoStream), SizeMode = PictureBoxSizeMode.Zoom, Bounds = new Rectangle(24, 19, 52, 52) });
         AddLabel(header, "YagmurMelekDc", 92, 19, 560, 32, 18, ForeColor, FontStyle.Bold);
         AddLabel(header, "MASAÜSTÜ KURUCUSU  /  0.5.2 · Windows x64", 94, 55, 520, 22, 9, Color.FromArgb(155, 165, 183));

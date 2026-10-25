@@ -50,7 +50,7 @@ internal static class InstallEngine
     {
         var dataRoot = destinationRoot ?? DataRoot;
         CheckPath(dataRoot);
-        using var input = Assembly.GetExecutingAssembly().GetManifestResourceStream("YagmurMelekDcInstaller.payload.zip") ?? throw new IOException("Kurulum paketi bulunamadı.");
+        using var input = Assembly.GetExecutingAssembly().GetManifestResourceStream("YagmurMelekDCInstaller.payload.zip") ?? throw new IOException("Kurulum paketi bulunamadı.");
         using var memory = new MemoryStream(); input.CopyTo(memory); var bytes = memory.ToArray();
         var hash = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
         var target = Path.Combine(dataRoot, "builds", Version + "-" + hash[..12]);
@@ -74,7 +74,7 @@ internal static class InstallEngine
         if (!File.Exists(Path.Combine(target, "patcher.js")) || !File.Exists(Path.Combine(target, "renderer.js"))) throw new IOException("Paket eksik.");
         var loader = Path.Combine(dataRoot, "bootstrap.cjs");
         CheckPath(loader); CheckPath(loader + ".tmp");
-        using var loaderStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("YagmurMelekDcInstaller.bootstrap.cjs") ?? throw new IOException("Başlangıç dosyası bulunamadı.");
+        using var loaderStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("YagmurMelekDCInstaller.bootstrap.cjs") ?? throw new IOException("Başlangıç dosyası bulunamadı.");
         using var reader = new StreamReader(loaderStream);
         File.WriteAllText(loader + ".tmp", reader.ReadToEnd());
         File.Move(loader + ".tmp", loader, true);
