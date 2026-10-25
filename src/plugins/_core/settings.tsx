@@ -179,14 +179,14 @@ export default definePlugin({
             !IS_UPDATER_DISABLED && UpdaterTab && buildEntry({
                 key: "vencord_updater",
                 title: yagmurMelekTranslate("Updater"),
-                panelTitle: "Vencord Updater",
+                panelTitle: "YagmurMelekDc Güncelleyici",
                 Component: UpdaterTab,
                 Icon: UpdaterIcon
             }),
             buildEntry({
                 key: "vencord_cloud",
                 title: yagmurMelekTranslate("Cloud"),
-                panelTitle: "Vencord Cloud",
+                panelTitle: "YagmurMelekDc Cloud",
                 Component: CloudTab,
                 Icon: CloudIcon
             }),
