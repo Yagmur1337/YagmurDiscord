@@ -10,5 +10,5 @@ with zipfile.ZipFile(release/'YagmurMelek-DC-0.2.0-dist.zip','w',zipfile.ZIP_DEF
  for p in (root/'dist').iterdir():
   if p.is_file(): z.write(p,p.name)
  z.write(root/'LICENSE','LICENSE')
-names=['YagmurMelekDcInstaller.exe','YagmurMelek-DC-0.2.0-source.zip','YagmurMelek-DC-0.2.0-dist.zip']
+names=['YagmurMelekDcInstaller.exe','YagmurMelekDcCli.exe','YagmurMelek-DC-0.2.0-source.zip','YagmurMelek-DC-0.2.0-dist.zip']
 (release/'SHA256SUMS.txt').write_text('\n'.join(hashlib.sha256((release/n).read_bytes()).hexdigest()+'  '+n for n in names)+'\n')

@@ -20,19 +20,31 @@ Vencord tabanlı Discord modifikasyonu. YagmurMelek Quiet eklentisi ve YagmurMel
 
 
 
-1. Releases bölümünden **YagmurMelekDcInstaller.exe** dosyasını indir.
+1. Releases bölümünden **YagmurMelekDcInstaller.exe** (Arayüzlü / CLI) veya **YagmurMelekDcCli.exe** (Doğrudan Komut Satırı) dosyasını indirin.
 
-2. Discord’u sistem tepsisi dahil tamamen kapat.
+2. **Arayüz ile Kurulum / Güncelleme:**
+   - **YagmurMelekDcInstaller.exe** dosyasını açın.
+   - Discord açıksa kurucu otomatik olarak kapatır (kutucuk işaretlidir).
+   - **Yükle / Güncelle**, **Dosyaları Yenile** (Onar) veya **Kaldır** düğmesine basarak işlemi tamamlayın.
 
-3. YagmurMelek DC Installer’ı aç, Discord Stable / PTB / Canary kurulumunu seç.
+3. **Komut Satırı (CLI) ile Kurulum / Güncelleme:**
+   ```powershell
+   # Kur veya Güncelle (Discord açıksa otomatik kapatır)
+   .\YagmurMelekDcCli.exe --install
 
-4. Seçimi onaylayıp **YagmurMelek DC’yi yükle** düğmesine bas.
+   # Dosyaları sıfırdan yenile ve onar
+   .\YagmurMelekDcCli.exe --repair
 
-5. Discord’u yeniden aç. Ayarlar → YagmurMelek DC → Plugins bölümünde **YagmurMelekQuiet** ayarlarını aç.
+   # Kaldır (Orijinal Discord dosyasını geri yükler)
+   .\YagmurMelekDcCli.exe --uninstall
 
+   # Kurulumları listele
+   .\YagmurMelekDcCli.exe --list
+   ```
 
+4. Discord’u açın. Ayarlar → YagmurMelek DC → Plugins bölümünde eklentilerinizi yönetin.
 
-Installer Windows x64 içindir, .NET çalışma zamanını ve YagmurMelek DC paketini içerir. Kurulumda ayrıca VencordInstaller indirmez veya çalıştırmaz. Dosya dijital olarak imzalı değildir.
+Installer Windows x64 içindir, .NET çalışma zamanını ve YagmurMelek DC paketini içerir. Harici dosya indirmez; tüm bileşenler bağımsız tek parça çalışır.
 
 
 

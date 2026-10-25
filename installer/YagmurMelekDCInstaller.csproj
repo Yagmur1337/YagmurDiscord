@@ -1,7 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
 <PropertyGroup>
-<OutputType>WinExe</OutputType><TargetFramework>net9.0-windows</TargetFramework><UseWindowsForms>true</UseWindowsForms><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><ApplicationIcon>assets/yagmurmelekdc.ico</ApplicationIcon><AssemblyName>YagmurMelekDcInstaller</AssemblyName><Product>YagmurMelek DC Installer</Product><Title>YagmurMelek DC Installer</Title><Description>YagmurMelek DC Windows installer</Description><Company>YagmurMelek DC</Company><Version>0.5.3</Version><Copyright>YagmurMelek DC contributors; GPL-3.0-or-later</Copyright><PublishSingleFile>true</PublishSingleFile><SelfContained>true</SelfContained><IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract><DebugType>none</DebugType>
+<OutputType>WinExe</OutputType>
+<TargetFramework>net9.0-windows</TargetFramework>
+<UseWindowsForms>true</UseWindowsForms>
+<ImplicitUsings>enable</ImplicitUsings>
+<Nullable>enable</Nullable>
+<ApplicationIcon>assets/yagmurmelekdc.ico</ApplicationIcon>
+<AssemblyName>YagmurMelekDcInstaller</AssemblyName>
+<RootNamespace>YagmurMelekDCInstaller</RootNamespace>
+<Product>YagmurMelek DC Installer</Product>
+<Title>YagmurMelek DC Installer</Title>
+<Description>YagmurMelek DC Windows installer</Description>
+<Company>YagmurMelek DC</Company>
+<Version>0.5.3</Version>
+<Copyright>YagmurMelek DC contributors; GPL-3.0-or-later</Copyright>
+<PublishSingleFile>true</PublishSingleFile>
+<SelfContained>true</SelfContained>
+<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+<DebugType>none</DebugType>
 </PropertyGroup>
 <ItemGroup><EmbeddedResource Include="payload.zip"/><EmbeddedResource Include="bootstrap.cjs"/><EmbeddedResource Include="assets/yagmurmelekdc.ico"/><EmbeddedResource Include="assets/yagmurmelekdc.png"/></ItemGroup>
 </Project>
-

@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+<PropertyGroup>
+<OutputType>Exe</OutputType>
+<TargetFramework>net9.0-windows</TargetFramework>
+<UseWindowsForms>true</UseWindowsForms>
+<ImplicitUsings>enable</ImplicitUsings>
+<Nullable>enable</Nullable>
+<ApplicationIcon>../assets/yagmurmelekdc.ico</ApplicationIcon>
+<AssemblyName>YagmurMelekDcCli</AssemblyName>
+<RootNamespace>YagmurMelekDCInstaller</RootNamespace>
+<Product>YagmurMelek DC CLI</Product>
+<Title>YagmurMelek DC CLI</Title>
+<Description>YagmurMelek DC Windows Command-Line Installer</Description>
+<Company>YagmurMelek DC</Company>
+<Version>0.5.3</Version>
+<Copyright>YagmurMelek DC contributors; GPL-3.0-or-later</Copyright>
+<PublishSingleFile>true</PublishSingleFile>
+<SelfContained>true</SelfContained>
+<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+<DebugType>none</DebugType>
+</PropertyGroup>
+<ItemGroup>
+  <Compile Include="../Program.cs" Link="Program.cs" />
+  <Compile Include="../InstallEngine.cs" Link="InstallEngine.cs" />
+  <Compile Include="../SelfTest.cs" Link="SelfTest.cs" />
+  <EmbeddedResource Include="../payload.zip" Link="payload.zip" />
+  <EmbeddedResource Include="../bootstrap.cjs" Link="bootstrap.cjs" />
+  <EmbeddedResource Include="../assets/yagmurmelekdc.ico" Link="assets/yagmurmelekdc.ico" />
+  <EmbeddedResource Include="../assets/yagmurmelekdc.png" Link="assets/yagmurmelekdc.png" />
+</ItemGroup>
+</Project>
