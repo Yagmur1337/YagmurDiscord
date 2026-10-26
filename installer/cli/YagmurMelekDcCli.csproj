@@ -10,14 +10,14 @@
     <RootNamespace>YagmurMelekDCInstaller</RootNamespace>
 
     <!-- Şirket ve Sahip Bilgileri -->
-    <Company>Yagmures Holding</Company>
-    <Authors>Yagmur Discord, Yagmures Holding</Authors>
-    <Product>Yagmur Discord CLI</Product>
-    <Title>Yagmur Discord Komut Satırı Yükleyicisi</Title>
-    <AssemblyTitle>Yagmur Discord Komut Satırı Yükleyicisi</AssemblyTitle>
-    <Description>Yagmur Discord Komut Satırı Kurulum Aracı - Yagmures Holding</Description>
-    <Copyright>(c) 2026 Yagmures Holding. Tum haklari saklidir.</Copyright>
-    <Trademark>Yagmures Holding - Yagmur Discord</Trademark>
+    <Company>YagmurMelek</Company>
+    <Authors>YagmurMelek</Authors>
+    <Product>YagmurMelek Discord CLI</Product>
+    <Title>YagmurMelek Discord Komut Satırı Yükleyicisi</Title>
+    <AssemblyTitle>YagmurMelek Discord Komut Satırı Yükleyicisi</AssemblyTitle>
+    <Description>YagmurMelek Discord Komut Satırı Kurulum Aracı</Description>
+    <Copyright>(c) 2026 YagmurMelek. Tüm hakları saklıdır.</Copyright>
+    <Trademark>YagmurMelek Discord</Trademark>
     <PackageProjectUrl>https://github.com/Yagmur1337/YagmurDiscord</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Yagmur1337/YagmurDiscord</RepositoryUrl>
     <PackageId>YagmurDiscord.CLI</PackageId>
@@ -27,7 +27,7 @@
     <Version>0.5.8</Version>
     <FileVersion>0.5.8.0</FileVersion>
     <AssemblyVersion>0.5.8.0</AssemblyVersion>
-    <InformationalVersion>0.5.8 - Yagmures Holding</InformationalVersion>
+    <InformationalVersion>0.5.8 - YagmurMelek</InformationalVersion>
 
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>

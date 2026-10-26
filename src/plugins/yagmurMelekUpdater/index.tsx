@@ -21,21 +21,13 @@ async function notifyUpdate() {
     try {
         const result = await native.check();
         if (!active) return;
-        if (result.rolledBack) showNotification({ title: "YagmurMelekDc", body: "Önceki sürüme geri dönüldü. Güncelleyici ayarlarını kontrol edin." });
+        if (result.rolledBack) showNotification({ title: "YagmurMelekDc", body: "Önceki kararlı sürüme dönüldü." });
         if (result.available && notified !== result.latest) {
             notified = result.latest;
-            try {
-                await native.installUpdate();
-                showNotification({
-                    title: "YagmurMelekDc Otomatik Güncellendi 🚀",
-                    body: `${result.latest} sürümü başarıyla indirildi. Güncellemeyi uygulamak için Discord'u yeniden başlatın.`
-                });
-            } catch {
-                showNotification({
-                    title: "YagmurMelekDc Güncellemesi Hazır",
-                    body: `${result.latest} sürümü yayınlandı. Eklentiler → YagmurMelekUpdater bölümünden indirebilirsiniz.`
-                });
-            }
+            showNotification({
+                title: "YagmurMelekDc Güncellemesi Hazır 🚀",
+                body: `${result.latest} sürümü yayınlandı. Eklentiler → YagmurMelekUpdater bölümünden tek tıkla güncelleyebilirsiniz.`
+            });
         }
     } catch { /* A failed background check should not interrupt Discord. */ }
 }
@@ -72,16 +64,16 @@ export default definePlugin({
     name: "YagmurMelekUpdater",
     description: "YagmurMelekDc güncellemelerini GitHub’dan indirir. Ayarları korur ve başarısız açılışta önceki sürüme döner.",
     authors: [{ name: "YagmurMelekDc", id: 0n }],
-    required: true,
+    required: false,
     settingsAboutComponent: Updater,
     start() {
         if (!IS_DISCORD_DESKTOP) return;
         active = true;
-        timer = setTimeout(async () => {
+        try { void native.confirmStartup(); } catch { }
+        timer = setTimeout(() => {
             if (!active) return;
-            try { await native.confirmStartup(); } catch { }
             void notifyUpdate();
-        }, 20000);
+        }, 10000);
         interval = setInterval(() => void notifyUpdate(), 6 * 60 * 60 * 1000);
     },
     stop() { active = false; clearTimeout(timer); clearInterval(interval); }

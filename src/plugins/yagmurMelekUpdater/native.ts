@@ -107,7 +107,9 @@ export async function installUpdate() {
     } finally { busy = false; }
 }
 export function confirmStartup() {
-    const s = state();
-    if (s.pending && s.current === basename(__dirname)) save({ ...s, pending: false, attempted: false });
+    try {
+        const s = state();
+        if (s.pending) save({ ...s, pending: false, attempted: false, rolledBack: false });
+    } catch { }
 }
 export function restart() { app.relaunch(); app.exit(0); }

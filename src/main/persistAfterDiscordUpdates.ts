@@ -67,25 +67,3 @@ try {
 // 2. Repatch on app close / restart
 app.on("before-quit", patchLatest);
 app.on("will-quit", patchLatest);
-
-// 3. Actively watch discord directory for background updates (Squirrel updater)
-try {
-    const currentAppPath = dirname(process.execPath);
-    const discordPath = join(currentAppPath, "..");
-    if (existsSync(discordPath)) {
-        let timer: ReturnType<typeof setTimeout> | undefined;
-        watch(discordPath, () => {
-            if (timer) clearTimeout(timer);
-            timer = setTimeout(() => {
-                let attempts = 0;
-                const interval = setInterval(() => {
-                    attempts++;
-                    const patched = patchLatest();
-                    if (patched || attempts > 15) {
-                        clearInterval(interval);
-                    }
-                }, 2000);
-            }, 1000);
-        });
-    }
-} catch { }

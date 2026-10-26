@@ -209,23 +209,19 @@ export default definePlugin({
             find: "canUsePremiumProfileCustomization:function",
             replacement: [
                 {
-                    match: /canUsePremiumProfileCustomization:function\((\i)\)\{return /g,
+                    match: /canUsePremiumProfileCustomization:function\((\i)\)\{return\s*/g,
                     replace: "$&$self.isCurrentUser($1?.id)||"
                 },
                 {
-                    match: /canUsePremiumGuildMemberProfile:function\((\i)\)\{return /g,
+                    match: /canUsePremiumGuildMemberProfile:function\((\i)\)\{return\s*/g,
                     replace: "$&$self.isCurrentUser($1?.id)||"
                 },
                 {
-                    match: /canUseClientThemes:function\((\i)\)\{return /g,
+                    match: /canUseClientThemes:function\((\i)\)\{return\s*/g,
                     replace: "$&$self.isCurrentUser($1?.id)||"
                 },
                 {
-                    match: /canUseAnimatedAvatar:function\((\i)\)\{return /g,
-                    replace: "$&$self.isCurrentUser($1?.id)||"
-                },
-                {
-                    match: /canUseCustomBackgrounds:function\((\i)\)\{return /g,
+                    match: /canUseCustomBackgrounds:function\((\i)\)\{return\s*/g,
                     replace: "$&$self.isCurrentUser($1?.id)||"
                 }
             ]
@@ -286,7 +282,7 @@ export default definePlugin({
             replacement: [
                 {
                     match: /null!=(\i)&&\(0,(\i)\.jsx\)\("div",\{className:(\i\.\i),children:\1\}\)/,
-                    replace: "null!=$1&&$self.renderContinueFreeLeadingAction($1,$3)"
+                    replace: "null!=$1&&(0,$2.jsx)(\"div\",{className:$3,children:[$1,$self.renderContinueFreeButton()]})"
                 }
             ]
         }
@@ -342,9 +338,12 @@ export default definePlugin({
     onSetTryItOutBanner(banner: any) {
         try {
             if (banner) {
-                const bannerUri = typeof banner === "object" && banner.imageUri
-                    ? banner.imageUri
-                    : (typeof banner === "string" ? banner : null);
+                let bannerUri: string | null = null;
+                if (typeof banner === "object") {
+                    bannerUri = banner.imageUri || banner.url || banner.asset || banner.id || banner.src || null;
+                } else if (typeof banner === "string") {
+                    bannerUri = banner;
+                }
                 if (bannerUri) {
                     settings.store.customBanner = bannerUri;
                 }
@@ -366,8 +365,11 @@ export default definePlugin({
 
     onSetTryItOutAvatarDecoration(decoration: any) {
         try {
-            if (decoration?.skuId) {
-                settings.store.avatarDecorationSkuId = String(decoration.skuId);
+            if (decoration) {
+                const sku = typeof decoration === "object" ? (decoration.skuId || decoration.id) : decoration;
+                if (sku) {
+                    settings.store.avatarDecorationSkuId = String(sku);
+                }
                 FluxDispatcher.dispatch({
                     type: "USER_PROFILE_SETTINGS_SET_PENDING_CHANGES",
                     pendingAvatarDecoration: decoration
@@ -384,11 +386,37 @@ export default definePlugin({
         }
     },
 
+    onSetTryItOutProfileEffect(effect: any) {
+        try {
+            if (effect) {
+                const effectId = typeof effect === "object" ? (effect.id || effect.skuId) : effect;
+                if (effectId) {
+                    settings.store.profileEffectId = String(effectId);
+                }
+                FluxDispatcher.dispatch({
+                    type: "USER_PROFILE_SETTINGS_SET_PENDING_CHANGES",
+                    pendingProfileEffect: effect
+                });
+            } else if (effect === null) {
+                settings.store.profileEffectId = "";
+                FluxDispatcher.dispatch({
+                    type: "USER_PROFILE_SETTINGS_SET_PENDING_CHANGES",
+                    pendingProfileEffect: null
+                });
+            }
+        } catch (err) {
+            console.error("[YagmurMelekNitroEffects] onSetTryItOutProfileEffect error:", err);
+        }
+    },
+
     getCustomBanner(userId?: string, _options?: any): string | null {
         if (!userId || this.isCurrentUser(userId)) {
             const banner = settings.store.customBanner;
-            if (banner && (banner.startsWith("http") || banner.startsWith("data:"))) {
-                return banner;
+            if (banner) {
+                if (banner.startsWith("http://") || banner.startsWith("https://") || banner.startsWith("data:")) {
+                    return banner;
+                }
+                return `https://cdn.discordapp.com/banners/${userId || UserStore.getCurrentUser()?.id}/${banner}.png?size=1024`;
             }
             return null;
         }
@@ -412,7 +440,7 @@ export default definePlugin({
             }
 
             if (this.isCurrentUser(dp?.userId)) {
-                if (settings.store.customBanner && !dp.banner) {
+                if (settings.store.customBanner) {
                     dp.banner = settings.store.customBanner;
                 }
                 if (settings.store.profileEffectId) {
@@ -426,7 +454,7 @@ export default definePlugin({
                         skuId: settings.store.avatarDecorationSkuId
                     };
                 }
-                if (!dp.themeColors && settings.store.primaryColor && settings.store.accentColor) {
+                if (settings.store.primaryColor && settings.store.accentColor) {
                     dp.themeColors = [settings.store.primaryColor, settings.store.accentColor];
                 }
             }
@@ -442,12 +470,34 @@ export default definePlugin({
 
             let currentBanner = settings.store.customBanner;
 
+            // Also check tryItOut changes if banner or deco was selected in try-it-out!
+            try {
+                const store = ((window as any).Vencord?.Webpack?.findStore?.("UserProfileSettingsStore")
+                    || ((window as any).Vencord?.Webpack?.wreq?.("836602") as any)?.A);
+                const tryItOut = store?.getTryItOutChanges?.() || {};
+                if (!e.banner && tryItOut.tryItOutBanner) {
+                    e.banner = tryItOut.tryItOutBanner;
+                }
+                if (!e.avatar_decoration_sku_id && tryItOut.tryItOutAvatarDecoration) {
+                    e.avatar_decoration_sku_id = tryItOut.tryItOutAvatarDecoration;
+                }
+                if (!e.profile_effect_id && tryItOut.tryItOutProfileEffect) {
+                    e.profile_effect_id = tryItOut.tryItOutProfileEffect;
+                }
+                if (!e.theme_colors && tryItOut.tryItOutThemeColors) {
+                    e.theme_colors = tryItOut.tryItOutThemeColors;
+                }
+            } catch { }
+
             // 1. Process Banner
             if (e.banner !== undefined) {
                 if (e.banner) {
-                    const bannerUri = typeof e.banner === "object" && e.banner.imageUri
-                        ? e.banner.imageUri
-                        : (typeof e.banner === "string" ? e.banner : null);
+                    let bannerUri: string | null = null;
+                    if (typeof e.banner === "object") {
+                        bannerUri = e.banner.imageUri || e.banner.url || e.banner.asset || e.banner.id || e.banner.src || null;
+                    } else if (typeof e.banner === "string") {
+                        bannerUri = e.banner;
+                    }
                     if (bannerUri) {
                         settings.store.customBanner = bannerUri;
                         currentBanner = bannerUri;
@@ -506,7 +556,10 @@ export default definePlugin({
             // 4. Avatar decoration
             if (e.avatar_decoration_sku_id !== undefined) {
                 if (e.avatar_decoration_sku_id) {
-                    settings.store.avatarDecorationSkuId = String(e.avatar_decoration_sku_id);
+                    const sku = typeof e.avatar_decoration_sku_id === "object"
+                        ? (e.avatar_decoration_sku_id.skuId || e.avatar_decoration_sku_id.id)
+                        : e.avatar_decoration_sku_id;
+                    settings.store.avatarDecorationSkuId = String(sku);
                 } else {
                     settings.store.avatarDecorationSkuId = "";
                 }
@@ -517,24 +570,21 @@ export default definePlugin({
         }
     },
 
-    renderContinueFreeLeadingAction: ErrorBoundary.wrap((m: any, className?: string) => {
+    renderContinueFreeButton() {
         return (
-            <div className={className} style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
-                {m}
-                <Button
-                    key="ym-continue-free"
-                    size={Button.Sizes.SMALL}
-                    className="ym-continue-free-btn"
-                    onClick={() => {
-                        const plugin = (window as any).Vencord?.Plugins?.plugins?.YagmurMelekNitroEffects;
-                        plugin?.saveAndApplyTryItOut?.();
-                    }}
-                >
-                    ✨ YagmurDiscord İle Ücretsiz Devam Et
-                </Button>
-            </div>
+            <button
+                key="ym-continue-free"
+                type="button"
+                className="ym-continue-free-btn"
+                onClick={() => {
+                    const plugin = (window as any).Vencord?.Plugins?.plugins?.YagmurMelekNitroEffects;
+                    plugin?.saveAndApplyTryItOut?.();
+                }}
+            >
+                ✨ YagmurDiscord İle Ücretsiz Devam Et
+            </button>
         );
-    }, { noop: true }),
+    },
 
     async saveAndApplyTryItOut() {
         try {
@@ -542,29 +592,46 @@ export default definePlugin({
             if (!currentUser) return;
 
             let tryItOut: any = {};
+            let pending: any = {};
             try {
-                const store = ((window as any).Vencord?.Webpack?.wreq?.("836602") as any)?.A;
+                const store = ((window as any).Vencord?.Webpack?.findStore?.("UserProfileSettingsStore")
+                    || ((window as any).Vencord?.Webpack?.wreq?.("836602") as any)?.A);
                 if (store?.getTryItOutChanges) {
                     tryItOut = store.getTryItOutChanges() || {};
                 }
+                if (store?.getPendingChanges) {
+                    pending = store.getPendingChanges() || {};
+                }
             } catch { }
 
-            const primary = tryItOut.tryItOutThemeColors?.[0] ?? settings.store.primaryColor ?? 0;
-            const accent = tryItOut.tryItOutThemeColors?.[1] ?? settings.store.accentColor ?? 0;
+            const primary = tryItOut.tryItOutThemeColors?.[0]
+                ?? pending.pendingThemeColors?.[0]
+                ?? settings.store.primaryColor
+                ?? 0;
+            const accent = tryItOut.tryItOutThemeColors?.[1]
+                ?? pending.pendingThemeColors?.[1]
+                ?? settings.store.accentColor
+                ?? 0;
 
             let bannerUrl = settings.store.customBanner;
-            if (tryItOut.tryItOutBanner) {
-                const b = tryItOut.tryItOutBanner;
-                bannerUrl = (typeof b === "object" ? (b.imageUri || b.url) : b) || bannerUrl;
+            const rawBanner = tryItOut.tryItOutBanner || pending.pendingBanner;
+            if (rawBanner) {
+                if (typeof rawBanner === "object") {
+                    bannerUrl = rawBanner.imageUri || rawBanner.url || rawBanner.asset || rawBanner.id || rawBanner.src || bannerUrl;
+                } else if (typeof rawBanner === "string") {
+                    bannerUrl = rawBanner;
+                }
             }
 
-            const avatarDecorationSkuId = tryItOut.tryItOutAvatarDecoration?.skuId
-                ? String(tryItOut.tryItOutAvatarDecoration.skuId)
-                : (tryItOut.tryItOutAvatarDecoration?.id ? String(tryItOut.tryItOutAvatarDecoration.id) : settings.store.avatarDecorationSkuId);
+            const rawDeco = tryItOut.tryItOutAvatarDecoration || pending.pendingAvatarDecoration;
+            const avatarDecorationSkuId = rawDeco?.skuId
+                ? String(rawDeco.skuId)
+                : (rawDeco?.id ? String(rawDeco.id) : (typeof rawDeco === "string" ? rawDeco : settings.store.avatarDecorationSkuId));
 
-            const profileEffectId = tryItOut.tryItOutProfileEffectId
-                ? String(tryItOut.tryItOutProfileEffectId)
-                : settings.store.profileEffectId;
+            const rawEffect = tryItOut.tryItOutProfileEffect || tryItOut.tryItOutProfileEffectId || pending.pendingProfileEffect;
+            const profileEffectId = rawEffect?.id
+                ? String(rawEffect.id)
+                : (rawEffect?.skuId ? String(rawEffect.skuId) : (typeof rawEffect === "string" ? rawEffect : settings.store.profileEffectId));
 
             // 1. Save to plugin settings
             if (primary) settings.store.primaryColor = primary;
@@ -577,7 +644,7 @@ export default definePlugin({
             const profile = UserProfileStore.getUserProfile(currentUser.id);
             let bio = profile?.bio ?? "";
             bio = strip3y3(bio);
-            const bannerFor3y3 = bannerUrl && bannerUrl.startsWith("http") ? bannerUrl : undefined;
+            const bannerFor3y3 = bannerUrl && (bannerUrl.startsWith("http://") || bannerUrl.startsWith("https://")) ? bannerUrl : undefined;
             const encoded3y3 = encode3y3(primary || 0, accent || 0, bannerFor3y3);
             const newBio = (bio.length > 0 ? bio + " " : "") + encoded3y3;
 
@@ -600,15 +667,54 @@ export default definePlugin({
                     profile.themeColors = [primary, accent];
                     profile.premiumType = 2;
                 }
+                if (bannerUrl) {
+                    profile.banner = bannerUrl;
+                }
             }
 
-            // 5. Close try-it-out preview notice
+            // 5. Close try-it-out preview notice & pending changes
             FluxDispatcher.dispatch({ type: "USER_PROFILE_SETTINGS_RESET_TRY_IT_OUT_CHANGES" });
+            FluxDispatcher.dispatch({ type: "USER_PROFILE_SETTINGS_RESET_PENDING_CHANGES" });
 
-            showToast("✨ YagmurDiscord: Profiliniz ücretsiz olarak başarıyla kaydedildi!", Toasts.Type.SUCCESS);
+            showToast("✨ YagmurDiscord: Profiliniz (Afiş, Renkler ve Efektler) ücretsiz olarak başarıyla kaydedildi!", Toasts.Type.SUCCESS);
         } catch (err) {
             console.error("[YagmurMelekNitroEffects] saveAndApplyTryItOut error:", err);
             showToast("Kaydedilirken bir hata oluştu.", Toasts.Type.FAILURE);
+        }
+    },
+
+    fluxListener: null as ((action: any) => void) | null,
+
+    start() {
+        this.fluxListener = (action: any) => {
+            switch (action.type) {
+                case "USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_BANNER":
+                    this.onSetTryItOutBanner(action.banner);
+                    break;
+                case "USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_THEME_COLORS":
+                    this.onSetTryItOutThemeColors(action.themeColors);
+                    break;
+                case "USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_AVATAR_DECORATION":
+                    this.onSetTryItOutAvatarDecoration(action.avatarDecoration);
+                    break;
+                case "USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_PROFILE_EFFECT":
+                    this.onSetTryItOutProfileEffect(action.profileEffect);
+                    break;
+            }
+        };
+        FluxDispatcher.subscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_BANNER", this.fluxListener);
+        FluxDispatcher.subscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_THEME_COLORS", this.fluxListener);
+        FluxDispatcher.subscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_AVATAR_DECORATION", this.fluxListener);
+        FluxDispatcher.subscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_PROFILE_EFFECT", this.fluxListener);
+    },
+
+    stop() {
+        if (this.fluxListener) {
+            FluxDispatcher.unsubscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_BANNER", this.fluxListener);
+            FluxDispatcher.unsubscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_THEME_COLORS", this.fluxListener);
+            FluxDispatcher.unsubscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_AVATAR_DECORATION", this.fluxListener);
+            FluxDispatcher.unsubscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_PROFILE_EFFECT", this.fluxListener);
+            this.fluxListener = null;
         }
     }
 });

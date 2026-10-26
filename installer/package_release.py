@@ -10,5 +10,5 @@ with zipfile.ZipFile(release/'YagmurMelek-DC-0.5.8-dist.zip','w',zipfile.ZIP_DEF
  for p in (root/'dist').iterdir():
   if p.is_file(): z.write(p,p.name)
  z.write(root/'LICENSE','LICENSE')
-names=['YagmurMelekDcInstaller.exe','YagmurMelekDcCli.exe','YagmurMelekKur.bat','install.ps1','SertifikayiGuvenilirYap.bat','YagmuresHolding.cer','YagmurMelek-DC-0.5.8-source.zip','YagmurMelek-DC-0.5.8-dist.zip','YagmurMelekDc-update.json']
+names=['YagmurMelekDcInstaller.exe','YagmurMelekDcCli.exe','YagmurMelek.cer','YagmurMelek-DC-0.5.8-source.zip','YagmurMelek-DC-0.5.8-dist.zip','YagmurMelekDc-update.json']
 (release/'SHA256SUMS.txt').write_text('\n'.join(hashlib.sha256((release/n).read_bytes()).hexdigest()+'  '+n for n in names if (release/n).exists())+'\n')

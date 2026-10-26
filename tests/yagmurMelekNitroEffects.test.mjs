@@ -10,8 +10,8 @@ test("module 202639 leadingAction regex matches Önizlemeden Çık and leaves mo
 
     assert.ok(canonRegex.test(floatingNoticeCode), "Must match when leadingAction m is present in floating notice bar");
     
-    const replaced = floatingNoticeCode.replace(canonRegex, 'null!=$1&&$self.renderContinueFreeLeadingAction($1,$3)');
-    assert.ok(replaced.includes('null!=m&&$self.renderContinueFreeLeadingAction(m,E.Zv)'));
+    const replaced = floatingNoticeCode.replace(canonRegex, 'null!=$1&&(0,$2.jsx)("div",{className:$3,children:[$1,$self.renderContinueFreeButton()]})');
+    assert.ok(replaced.includes('null!=m&&(0,i.jsx)("div",{className:E.Zv,children:[m,$self.renderContinueFreeButton()]})'));
 
     // 2. Modal dialog upsell (has NO leadingAction m)
     const modalDialogCode = 'children:[(0,i.jsx)(d.E,{variant:a??"text-sm/medium",color:"text-strong",className:E.tD,children:n}),"string"==typeof A?(0,i.jsx)(c.A,{size:"sm"}):A]';
