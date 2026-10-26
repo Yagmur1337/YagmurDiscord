@@ -8,8 +8,8 @@ import "./styles.css";
 
 import { addProfileBadge, BadgePosition, ProfileBadge, removeProfileBadge } from "@api/Badges";
 import { addMemberListDecorator, removeMemberListDecorator } from "@api/MemberListDecorators";
-import { addMessageDecoration, removeMessageDecoration } from "@api/MessageDecorations";
 import { definePluginSettings } from "@api/Settings";
+import ErrorBoundary from "@components/ErrorBoundary";
 import { Devs } from "@utils/constants";
 import definePlugin, { OptionType } from "@utils/types";
 import { React, Tooltip } from "@webpack/common";
@@ -95,20 +95,33 @@ export default definePlugin({
     tags: ["Appearance", "Chat", "Customisation"],
     authors: [Devs.Ven],
     enabledByDefault: true,
-    dependencies: ["MessageDecorationsAPI", "MemberListDecoratorsAPI"],
+    dependencies: ["MemberListDecoratorsAPI"],
     settings,
+
+    patches: [
+        {
+            find: '="SYSTEM_TAG"',
+            replacement: [
+                {
+                    // Render verified badge immediately adjacent to username, to the left of clan tags and bot tags
+                    match: /className:\i\(\)\(\i\.className(?:,\i\.\i)?,\i\)\}\)(?:\))?,(?=\i)/g,
+                    replace: "$&$self.renderMessageVerifiedBadge(arguments[0]),",
+                },
+            ]
+        }
+    ],
+
+    renderMessageVerifiedBadge: ErrorBoundary.wrap((props: any) => {
+        if (!settings.store.showInChat) return null;
+        const userId = props?.message?.author?.id ?? props?.author?.authorId ?? props?.userOverride?.id;
+        if (isVerifiedUser(userId)) {
+            return renderBadge("chat-" + (props?.message?.id || userId));
+        }
+        return null;
+    }, { noop: true }),
 
     start() {
         addProfileBadge(verifiedProfileBadge);
-
-        addMessageDecoration("ym-verified-badge", props => {
-            if (!settings.store.showInChat) return null;
-            const authorId = props.message?.author?.id;
-            if (isVerifiedUser(authorId)) {
-                return renderBadge("chat-" + (props.message?.id || authorId));
-            }
-            return null;
-        });
 
         addMemberListDecorator("ym-verified-badge", ({ user }) => {
             if (!settings.store.showInMemberList) return null;
@@ -121,7 +134,6 @@ export default definePlugin({
 
     stop() {
         removeProfileBadge(verifiedProfileBadge);
-        removeMessageDecoration("ym-verified-badge");
         removeMemberListDecorator("ym-verified-badge");
     }
 });

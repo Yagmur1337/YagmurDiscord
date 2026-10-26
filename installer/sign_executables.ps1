@@ -21,9 +21,9 @@ try {
 Export-Certificate -Cert $cert -FilePath "release/YagmuresHolding.cer" -Force | Out-Null
 Write-Host "Exported public certificate to release/YagmuresHolding.cer"
 
-# Sign release executables
-Set-AuthenticodeSignature -FilePath "release/YagmurMelekDcInstaller.exe" -Certificate $cert | Out-Null
-Set-AuthenticodeSignature -FilePath "release/YagmurMelekDcCli.exe" -Certificate $cert | Out-Null
+# Sign release executables with RFC 3161 DigiCert Timestamp
+Set-AuthenticodeSignature -FilePath "release/YagmurMelekDcInstaller.exe" -Certificate $cert -TimestampServer "http://timestamp.digicert.com" -HashAlgorithm SHA256 | Out-Null
+Set-AuthenticodeSignature -FilePath "release/YagmurMelekDcCli.exe" -Certificate $cert -TimestampServer "http://timestamp.digicert.com" -HashAlgorithm SHA256 | Out-Null
 
 $sigInstaller = Get-AuthenticodeSignature "release/YagmurMelekDcInstaller.exe"
 Write-Host "Installer Signature Status: $($sigInstaller.Status)"
