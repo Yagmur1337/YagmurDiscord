@@ -83,7 +83,7 @@ export async function installUpdate() {
         const { version, asset } = await latest();
         if (!newerVersion(version, HYPER_VERSION) || !asset) throw Error("Yeni güncelleme paketi bulunamadı.");
         if (!/^sha256:[a-f0-9]{64}$/.test(asset.digest) || !Number.isInteger(asset.size) || asset.size > 45 * 1024 * 1024
-            || asset.browser_download_url !== `https://github.com/Yagmur1337/YagmurDiscord/releases/download/v${version}/${assetName}`) throw Error("Yayın paketi doğrulanamıyor.");
+            || (!asset.browser_download_url.endsWith(`/${version}/${assetName}`) && !asset.browser_download_url.endsWith(`/v${version}/${assetName}`))) throw Error("Yayın paketi doğrulanamıyor.");
         const bytes = await download(asset.browser_download_url, 45 * 1024 * 1024);
         if (bytes.length !== asset.size) throw Error("Güncelleme indirmesi eksik.");
         const digest = asset.digest.slice(7);

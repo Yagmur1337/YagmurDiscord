@@ -101,8 +101,40 @@ const settings = definePluginSettings({
         description: yagmurMelekTranslate("Whether to make the mobile indicator match the color of the user status."),
         default: true,
         restartNeeded: true
+    },
+    fakeAllPlatforms: {
+        type: OptionType.BOOLEAN,
+        description: "Tüm platformlarda aktif görün (Masaüstü, Mobil, Web, Konsol simgelerini aynı anda göster)",
+        default: true,
+        restartNeeded: false
+    },
+    fakePlatformUserIds: {
+        type: OptionType.STRING,
+        description: "Fake platform simgeleri gösterilecek kullanıcı ID'leri (Boş ise yalnızca kendiniz)",
+        default: "",
+        restartNeeded: false
     }
 });
+
+const FAKE_ALL_STATUS: ClientStatusMap = {
+    desktop: "online",
+    mobile: "online",
+    web: "online",
+    embedded: "online"
+};
+
+function isFakePlatformUser(userId?: string): boolean {
+    if (!settings.store.fakeAllPlatforms) return false;
+    const currentUserId = AuthenticationStore.getId();
+    if (userId && userId === currentUserId) return true;
+    if (!userId && currentUserId) return true;
+
+    const extraIds = (settings.store.fakePlatformUserIds || "")
+        .split(/[,\s]+/)
+        .map(id => id.trim())
+        .filter(Boolean);
+    return Boolean(userId && extraIds.includes(userId));
+}
 
 function Icon(path: string, opts?: { viewBox?: string; width?: number; height?: number; }) {
     return ({ color, tooltip, small }: { color: string; tooltip: string; small: boolean; }) => (
@@ -135,6 +167,8 @@ const PlatformIcon = ({ platform, status, small }: { platform: DiscordPlatform, 
 };
 
 function getOwnStatus() {
+    if (isFakePlatformUser()) return FAKE_ALL_STATUS;
+
     const sessions = SessionsStore.getSessions();
     if (typeof sessions !== "object") return null;
 
@@ -159,9 +193,12 @@ function getBadges({ userId }: BadgeUserArgs): ProfileBadge[] {
 
     if (!user || user.bot) return [];
 
-    const status = user.id === AuthenticationStore.getId()
-        ? getOwnStatus()
-        : PresenceStore.getClientStatus(user.id);
+    const isFake = isFakePlatformUser(user.id);
+    const status = isFake
+        ? FAKE_ALL_STATUS
+        : (user.id === AuthenticationStore.getId()
+            ? getOwnStatus()
+            : PresenceStore.getClientStatus(user.id));
 
     if (!status) return [];
 
@@ -209,12 +246,14 @@ function renderPlatformIndicators(user: User, small: boolean) {
 }
 
 function CurrentUserPlatformIndicators({ small }: { small: boolean; }) {
-    const statusMap = useStateFromStores([SessionsStore], getOwnStatus);
+    const isFake = isFakePlatformUser();
+    const statusMap = useStateFromStores([SessionsStore], () => isFake ? FAKE_ALL_STATUS : getOwnStatus());
     return statusMap ? <PlatformIndicators statusMap={statusMap} small={small} /> : null;
 }
 
 function OtherUserPlatformIndicators({ user, small = false }: { user: User; small?: boolean; }) {
-    const statusMap = useStateFromStores([PresenceStore], () => PresenceStore.getClientStatus(user.id));
+    const isFake = isFakePlatformUser(user?.id);
+    const statusMap = useStateFromStores([PresenceStore], () => isFake ? FAKE_ALL_STATUS : PresenceStore.getClientStatus(user.id));
     return statusMap ? <PlatformIndicators statusMap={statusMap} small={small} /> : null;
 }
 

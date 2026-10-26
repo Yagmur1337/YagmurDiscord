@@ -15,7 +15,7 @@ import { copyWithToast } from "@utils/discord";
 import { Margins } from "@utils/margins";
 import { classes } from "@utils/misc";
 import definePlugin, { OptionType } from "@utils/types";
-import { Button, ColorPicker, FluxDispatcher, Forms, React, Text, TextInput, UserProfileStore, UserStore, useState } from "@webpack/common";
+import { Button, ColorPicker, FluxDispatcher, Forms, React, showToast, Text, TextInput, Toasts, UserProfileStore, UserStore, useState } from "@webpack/common";
 
 export interface Decoded3y3 {
     colors?: [number, number];
@@ -280,6 +280,16 @@ export default definePlugin({
                     replace: "$&$self.handleProfileSave($1,$2);"
                 }
             ]
+        },
+        // 5. Module 202639: Add "YagmurMelek Discord İle Ücretsiz Devam Et" button beside Nitro Al
+        {
+            find: "translateY(120%)",
+            replacement: [
+                {
+                    match: /"string"==typeof (\i)\?/g,
+                    replace: "$self.renderContinueFreeButton(),$&"
+                }
+            ]
         }
     ],
 
@@ -505,6 +515,90 @@ export default definePlugin({
             }
         } catch (err) {
             console.error("[YagmurMelekNitroEffects] handleProfileSave error:", err);
+        }
+    },
+
+    renderContinueFreeButton: ErrorBoundary.wrap(() => {
+        return (
+            <Button
+                key="ym-continue-free"
+                size={Button.Sizes.SMALL}
+                className="ym-continue-free-btn"
+                onClick={() => {
+                    const plugin = (window as any).Vencord?.Plugins?.plugins?.YagmurMelekNitroEffects;
+                    plugin?.saveAndApplyTryItOut?.();
+                }}
+            >
+                ✨ YagmurMelek Discord İle Ücretsiz Devam Et
+            </Button>
+        );
+    }, { noop: true }),
+
+    async saveAndApplyTryItOut() {
+        try {
+            const currentUser = UserStore.getCurrentUser();
+            if (!currentUser) return;
+
+            let tryItOut: any = {};
+            try {
+                const store = ((window as any).Vencord?.Webpack?.wreq?.("836602") as any)?.A;
+                if (store?.getTryItOutChanges) {
+                    tryItOut = store.getTryItOutChanges() || {};
+                }
+            } catch { }
+
+            const primary = tryItOut.tryItOutThemeColors?.[0] ?? settings.store.primaryColor ?? 0;
+            const accent = tryItOut.tryItOutThemeColors?.[1] ?? settings.store.accentColor ?? 0;
+
+            let bannerUrl = settings.store.customBanner;
+            if (tryItOut.tryItOutBanner) {
+                const b = tryItOut.tryItOutBanner;
+                bannerUrl = (typeof b === "object" ? b.imageUri : b) || bannerUrl;
+            }
+
+            const avatarDecorationSkuId = tryItOut.tryItOutAvatarDecoration?.skuId
+                ? String(tryItOut.tryItOutAvatarDecoration.skuId)
+                : settings.store.avatarDecorationSkuId;
+
+            const profileEffectId = tryItOut.tryItOutProfileEffectId
+                ? String(tryItOut.tryItOutProfileEffectId)
+                : settings.store.profileEffectId;
+
+            if (primary) settings.store.primaryColor = primary;
+            if (accent) settings.store.accentColor = accent;
+            if (bannerUrl) settings.store.customBanner = bannerUrl;
+            if (avatarDecorationSkuId) settings.store.avatarDecorationSkuId = avatarDecorationSkuId;
+            if (profileEffectId) settings.store.profileEffectId = profileEffectId;
+
+            const payload: any = {};
+            if (primary && accent) {
+                payload.theme_colors = [primary, accent];
+            }
+            if (bannerUrl) {
+                payload.banner = bannerUrl;
+            }
+            if (avatarDecorationSkuId) {
+                payload.avatar_decoration_sku_id = avatarDecorationSkuId;
+            }
+            if (profileEffectId) {
+                payload.profile_effect_id = profileEffectId;
+            }
+
+            // Save via Discord profile API
+            const actionMod = ((window as any).Vencord?.Webpack?.wreq?.("207803") as any);
+            if (actionMod?.gi) {
+                await actionMod.gi(payload);
+            } else {
+                this.handleProfileSave(payload);
+            }
+
+            // Close the try it out preview bar
+            FluxDispatcher.dispatch({ type: "USER_PROFILE_SETTINGS_RESET_TRY_IT_OUT_CHANGES" });
+
+            showToast("✨ YagmurMelek: Profiliniz ücretsiz olarak başarıyla kaydedildi!", Toasts.Type.SUCCESS);
+        } catch (err) {
+            console.error("[YagmurMelekNitroEffects] saveAndApplyTryItOut error:", err);
+            showToast("Kaydedilirken bir hata oluştu.", Toasts.Type.FAILURE);
         }
     }
 });
