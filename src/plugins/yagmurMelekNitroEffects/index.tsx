@@ -17,8 +17,18 @@ import { classes } from "@utils/misc";
 import definePlugin, { OptionType } from "@utils/types";
 import { Button, ColorPicker, FluxDispatcher, Forms, React, Text, TextInput, UserProfileStore, UserStore, useState } from "@webpack/common";
 
-export function encode3y3(primary: number, accent: number): string {
-    const message = `[#${primary.toString(16).padStart(6, "0")},#${accent.toString(16).padStart(6, "0")}]`;
+export interface Decoded3y3 {
+    colors?: [number, number];
+    banner?: string;
+}
+
+export function encode3y3(primary: number, accent: number, bannerUrl?: string): string {
+    let message = `[#${primary.toString(16).padStart(6, "0")},#${accent.toString(16).padStart(6, "0")}`;
+    if (bannerUrl && (bannerUrl.startsWith("http://") || bannerUrl.startsWith("https://"))) {
+        message += `,${bannerUrl.trim()}`;
+    }
+    message += "]";
+
     const encoded = Array.from(message)
         .map(x => x.codePointAt(0))
         .filter(x => x! >= 0x20 && x! <= 0x7f)
@@ -28,24 +38,27 @@ export function encode3y3(primary: number, accent: number): string {
     return " " + encoded;
 }
 
-export function decode3y3(bio?: string): [number, number] | null {
+export function decode3y3(bio?: string): Decoded3y3 | null {
     if (!bio) return null;
 
-    const colorString = bio.match(
-        /\u{e005b}\u{e0023}([\u{e0061}-\u{e0066}\u{e0041}-\u{e0046}\u{e0030}-\u{e0039}]{1,6})\u{e002c}\u{e0023}([\u{e0061}-\u{e0066}\u{e0041}-\u{e0046}\u{e0030}-\u{e0039}]{1,6})\u{e005d}/u,
-    );
-    if (colorString != null) {
-        const parsed = [...colorString[0]]
-            .map(x => String.fromCodePoint(x.codePointAt(0)! - 0xe0000))
-            .join("");
-        const colors = parsed
-            .substring(1, parsed.length - 1)
-            .split(",")
-            .map(x => parseInt(x.replace("#", "0x"), 16));
+    const tagChars = Array.from(bio).filter(c => {
+        const cp = c.codePointAt(0)!;
+        return cp >= 0xe0020 && cp <= 0xe007f;
+    });
+    if (tagChars.length === 0) return null;
 
-        return [colors[0], colors[1]];
-    }
-    return null;
+    const decodedStr = tagChars.map(c => String.fromCodePoint(c.codePointAt(0)! - 0xe0000)).join("");
+    const match = decodedStr.match(/\[#([0-9a-fA-F]{1,6}),#([0-9a-fA-F]{1,6})(?:,([^\s\]]+))?\]/);
+    if (!match) return null;
+
+    const primary = parseInt(match[1], 16);
+    const accent = parseInt(match[2], 16);
+    const banner = match[3] && (match[3].startsWith("http://") || match[3].startsWith("https://")) ? match[3] : undefined;
+
+    return {
+        colors: [primary, accent],
+        banner
+    };
 }
 
 export function strip3y3(bio?: string): string {
@@ -55,7 +68,7 @@ export function strip3y3(bio?: string): string {
 
 const settings = definePluginSettings({
     auto3y3ProfileColors: {
-        description: "Profil ekranından seçilen renkleri otomatik 3y3 kodu olarak Bio'ya kaydet (Diğer mod kullanıcıları da görür)",
+        description: "Profil ekranından seçilen renkleri ve afişi otomatik 3y3 kodu olarak Bio'ya kaydet (Diğer YagmurMelek kullanıcıları da görür)",
         type: OptionType.BOOLEAN,
         default: true,
         restartNeeded: false,
@@ -95,11 +108,12 @@ const settings = definePluginSettings({
 function SettingsAboutComponent() {
     const currentUser = UserStore.getCurrentUser();
     const currentBio = UserProfileStore.getUserProfile(currentUser?.id ?? "")?.bio ?? "";
-    const detectedColors = decode3y3(currentBio) ?? [settings.store.primaryColor, settings.store.accentColor];
+    const detected3y3 = decode3y3(currentBio);
+    const detectedColors = detected3y3?.colors ?? [settings.store.primaryColor, settings.store.accentColor];
 
     const [primary, setPrimary] = useState(detectedColors[0] || 0);
     const [accent, setAccent] = useState(detectedColors[1] || 0);
-    const [bannerUrl, setBannerUrl] = useState(settings.store.customBanner || "");
+    const [bannerUrl, setBannerUrl] = useState(detected3y3?.banner || settings.store.customBanner || "");
 
     return (
         <section className={Margins.top8}>
@@ -112,9 +126,9 @@ function SettingsAboutComponent() {
                 <Forms.FormText className={Margins.top8}>
                     <ul>
                         <li>
-                            <strong>Doğrudan Profil Düzenleme:</strong> Profil ekranında renklerinizi seçip
-                            &quot;Değişiklikleri Kaydet&quot; dediğinizde renkler otomatik olarak Bio&apos;nuza 3y3 görünmez
-                            koduyla işlenir. Manuel kod kopyala-yapıştır yapmanıza gerek kalmaz.
+                            <strong>Doğrudan Profil Düzenleme:</strong> Profil ekranında renklerinizi ve afişinizi seçip
+                            &quot;Değişiklikleri Kaydet&quot; dediğinizde değişiklikler otomatik olarak Bio&apos;nuza 3y3 görünmez
+                            koduyla işlenir. Diğer YagmurMelek Discord kullanıcıları da afişinizi ve renklerinizi görür.
                         </li>
                         <li>
                             <strong>Afiş Desteği:</strong> Profil afişinizi doğrudan seçebilir veya aşağıya bir görsel URL&apos;si
@@ -145,10 +159,9 @@ function SettingsAboutComponent() {
                     />
                     <Button
                         color={Button.Colors.PRIMARY}
-                        size={Button.Sizes.MEDIUM}
-                        style={{ marginTop: "auto" }}
+                        size={Button.Sizes.SMALL}
                         onClick={() => {
-                            const enc = encode3y3(primary, accent);
+                            const enc = encode3y3(primary, accent, bannerUrl.startsWith("http") ? bannerUrl : undefined);
                             copyWithToast(enc);
                         }}
                     >
@@ -158,34 +171,19 @@ function SettingsAboutComponent() {
 
                 <Divider className={classes(Margins.top16, Margins.bottom16)} />
 
-                <Forms.FormTitle tag="h3">🖼️ Özel Profil Afişi</Forms.FormTitle>
-                <Forms.FormText className={Margins.bottom8}>
-                    Doğrudan bir görsel bağlantısı (örn. Discord CDN veya Imgur linki) girebilirsiniz:
+                <Forms.FormTitle tag="h3">🖼️ Özel Profil Afişi (Banner URL)</Forms.FormTitle>
+                <TextInput
+                    value={bannerUrl}
+                    placeholder="https://i.imgur.com/example.png"
+                    onChange={(val: string) => {
+                        setBannerUrl(val);
+                        settings.store.customBanner = val;
+                    }}
+                    className={Margins.top8}
+                />
+                <Forms.FormText className={Margins.top8}>
+                    Buraya girdiğiniz doğrudan görsel bağlantısı (PNG/GIF/WebP) profilinizde afiş olarak gösterilir ve diğer YagmurMelek kullanıcılarına aktarılır.
                 </Forms.FormText>
-                <Flex gap="1em" alignItems="center">
-                    <div style={{ flex: 1 }}>
-                        <TextInput
-                            value={bannerUrl}
-                            placeholder="https://i.imgur.com/example.png"
-                            onChange={(val: string) => {
-                                setBannerUrl(val);
-                                settings.store.customBanner = val;
-                            }}
-                        />
-                    </div>
-                    {bannerUrl && (
-                        <Button
-                            color={Button.Colors.RED}
-                            size={Button.Sizes.MEDIUM}
-                            onClick={() => {
-                                setBannerUrl("");
-                                settings.store.customBanner = "";
-                            }}
-                        >
-                            Afişi Kaldır
-                        </Button>
-                    )}
-                </Flex>
 
                 {bannerUrl && (
                     <div className={Margins.top8}>
@@ -199,9 +197,10 @@ function SettingsAboutComponent() {
 
 export default definePlugin({
     name: "YagmurMelekNitroEffects",
-    description: "Profil rengi, afiş ve efektleri Nitro gerekmeden doğrudan Discord Profil Düzenleme ekranından ayarlamanızı sağlar (otomatik 3y3 entegrasyonu ve afiş desteği).",
+    description: "Profil rengi, afiş ve efektleri Nitro gerekmeden doğrudan Discord Profil Düzenleme ekranından ayarlamanızı sağlar (otomatik 3y3 senkronizasyonu ve afiş desteği).",
     tags: ["Appearance", "Customisation"],
     authors: [Devs.Ven],
+    enabledByDefault: true,
     settings,
     settingsAboutComponent: ErrorBoundary.wrap(SettingsAboutComponent, { noop: true }),
 
@@ -220,6 +219,14 @@ export default definePlugin({
                 },
                 {
                     match: /canUseClientThemes:function\((\i)\)\{return /g,
+                    replace: "$&$self.isCurrentUser($1?.id)||"
+                },
+                {
+                    match: /canUseAnimatedAvatar:function\((\i)\)\{return /g,
+                    replace: "$&$self.isCurrentUser($1?.id)||"
+                },
+                {
+                    match: /canUseCustomBackgrounds:function\((\i)\)\{return /g,
                     replace: "$&$self.isCurrentUser($1?.id)||"
                 }
             ]
@@ -246,7 +253,7 @@ export default definePlugin({
                 }
             ]
         },
-        // 3. Module 207803: Intercept try-it-out changes in Discord profile edit UI (Screenshot 3)
+        // 3. Module 207803: Intercept try-it-out changes in Discord profile edit UI
         {
             find: 'type:"USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_THEME_COLORS"',
             replacement: [
@@ -295,7 +302,8 @@ export default definePlugin({
             if (Array.isArray(colors) && colors[0] != null && colors[1] != null) {
                 settings.store.primaryColor = colors[0];
                 settings.store.accentColor = colors[1];
-                const encoded = encode3y3(colors[0], colors[1]);
+                const bannerUrl = settings.store.customBanner;
+                const encoded = encode3y3(colors[0], colors[1], bannerUrl?.startsWith("http") ? bannerUrl : undefined);
                 let bio = UserProfileStore.getUserProfile(currentUser.id)?.bio ?? "";
                 bio = strip3y3(bio);
                 const newBio = (bio.length > 0 ? bio + " " : "") + encoded;
@@ -368,38 +376,50 @@ export default definePlugin({
     },
 
     getCustomBanner(userId?: string, _options?: any): string | null {
-        if (!this.isCurrentUser(userId)) return null;
-        const banner = settings.store.customBanner;
-        if (banner && (banner.startsWith("http") || banner.startsWith("data:"))) {
-            return banner;
+        if (!userId || this.isCurrentUser(userId)) {
+            const banner = settings.store.customBanner;
+            if (banner && (banner.startsWith("http") || banner.startsWith("data:"))) {
+                return banner;
+            }
+            return null;
         }
+
+        try {
+            const bio = UserProfileStore.getUserProfile(userId)?.bio;
+            const decoded = decode3y3(bio);
+            if (decoded?.banner) return decoded.banner;
+        } catch { }
+
         return null;
     },
 
-    initDisplayProfile(dp: any, _userProfile?: any, _guildMemberProfile?: any) {
+    initDisplayProfile(dp: any, userProfile?: any, _guildMemberProfile?: any) {
         try {
-            if (!this.isCurrentUser(dp?.userId)) return;
-
-            if (settings.store.customBanner) {
-                dp.banner = settings.store.customBanner;
-            }
-            if (settings.store.profileEffectId) {
-                dp.profileEffect = {
-                    id: settings.store.profileEffectId,
-                    skuId: settings.store.profileEffectId
-                };
-            }
-            if (settings.store.avatarDecorationSkuId) {
-                dp.avatarDecoration = {
-                    skuId: settings.store.avatarDecorationSkuId
-                };
-            }
-
-            const decoded = decode3y3(dp?.bio);
+            const bio = dp?.bio || userProfile?.bio;
+            const decoded = decode3y3(bio);
             if (decoded) {
-                dp.themeColors = decoded;
-            } else if (settings.store.primaryColor && settings.store.accentColor && !dp.themeColors) {
-                dp.themeColors = [settings.store.primaryColor, settings.store.accentColor];
+                if (decoded.colors) dp.themeColors = decoded.colors;
+                if (decoded.banner) dp.banner = decoded.banner;
+            }
+
+            if (this.isCurrentUser(dp?.userId)) {
+                if (settings.store.customBanner && !dp.banner) {
+                    dp.banner = settings.store.customBanner;
+                }
+                if (settings.store.profileEffectId) {
+                    dp.profileEffect = {
+                        id: settings.store.profileEffectId,
+                        skuId: settings.store.profileEffectId
+                    };
+                }
+                if (settings.store.avatarDecorationSkuId) {
+                    dp.avatarDecoration = {
+                        skuId: settings.store.avatarDecorationSkuId
+                    };
+                }
+                if (!dp.themeColors && settings.store.primaryColor && settings.store.accentColor) {
+                    dp.themeColors = [settings.store.primaryColor, settings.store.accentColor];
+                }
             }
         } catch (err) {
             console.error("[YagmurMelekNitroEffects] initDisplayProfile error:", err);
@@ -411,12 +431,31 @@ export default definePlugin({
             const currentUser = UserStore.getCurrentUser();
             if (!currentUser) return;
 
-            // 1. Theme colors -> Auto 3y3 encoding into bio
+            let currentBanner = settings.store.customBanner;
+
+            // 1. Process Banner
+            if (e.banner !== undefined) {
+                if (e.banner) {
+                    const bannerUri = typeof e.banner === "object" && e.banner.imageUri
+                        ? e.banner.imageUri
+                        : (typeof e.banner === "string" ? e.banner : null);
+                    if (bannerUri) {
+                        settings.store.customBanner = bannerUri;
+                        currentBanner = bannerUri;
+                    }
+                } else if (e.banner === null) {
+                    settings.store.customBanner = "";
+                    currentBanner = "";
+                }
+                delete e.banner;
+            }
+
+            // 2. Theme colors -> Auto 3y3 encoding into bio (with custom banner sync)
             if (e.theme_colors !== undefined) {
                 if (Array.isArray(e.theme_colors) && e.theme_colors[0] != null && e.theme_colors[1] != null) {
                     const [primary, accent] = e.theme_colors;
                     if (settings.store.auto3y3ProfileColors) {
-                        const encoded = encode3y3(primary, accent);
+                        const encoded = encode3y3(primary, accent, currentBanner?.startsWith("http") ? currentBanner : undefined);
                         let bio = typeof e.bio === "string"
                             ? e.bio
                             : (UserProfileStore.getUserProfile(currentUser.id)?.bio ?? "");
@@ -426,7 +465,6 @@ export default definePlugin({
                     settings.store.primaryColor = primary;
                     settings.store.accentColor = accent;
                 } else {
-                    // Reset colors
                     let bio = typeof e.bio === "string"
                         ? e.bio
                         : (UserProfileStore.getUserProfile(currentUser.id)?.bio ?? "");
@@ -434,24 +472,16 @@ export default definePlugin({
                     settings.store.primaryColor = 0;
                     settings.store.accentColor = 0;
                 }
-                // Strip theme_colors from payload so Discord server accepts the save without Nitro
                 delete e.theme_colors;
-            }
-
-            // 2. Banner
-            if (e.banner !== undefined) {
-                if (e.banner) {
-                    const bannerUri = typeof e.banner === "object" && e.banner.imageUri
-                        ? e.banner.imageUri
-                        : (typeof e.banner === "string" ? e.banner : null);
-                    if (bannerUri) {
-                        settings.store.customBanner = bannerUri;
-                    }
-                } else if (e.banner === null) {
-                    settings.store.customBanner = "";
-                }
-                // Strip banner from network request
-                delete e.banner;
+            } else if (currentBanner && currentBanner.startsWith("http") && settings.store.auto3y3ProfileColors) {
+                const primary = settings.store.primaryColor || 0;
+                const accent = settings.store.accentColor || 0;
+                const encoded = encode3y3(primary, accent, currentBanner);
+                let bio = typeof e.bio === "string"
+                    ? e.bio
+                    : (UserProfileStore.getUserProfile(currentUser.id)?.bio ?? "");
+                bio = strip3y3(bio);
+                e.bio = (bio.length > 0 ? bio + " " : "") + encoded;
             }
 
             // 3. Profile effect

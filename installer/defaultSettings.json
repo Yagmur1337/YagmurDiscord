@@ -655,6 +655,9 @@
         },
         "YagmurMelekNitroEffects": {
             "enabled": true
+        },
+        "YagmurMelekVerifiedBadge": {
+            "enabled": true
         }
     },
     "uiElements": {

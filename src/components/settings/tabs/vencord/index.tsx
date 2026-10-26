@@ -160,8 +160,8 @@ function VencordSettings() {
                 )
                 : (
                     <SpecialCard
-                        title={yagmurMelekTranslate("Buy Vencord a coffee")}
-                        description={yagmurMelekTranslate("Please consider supporting the development of Vencord by donating!")}
+                        title={yagmurMelekTranslate("Buy YagmurMelek a coffee")}
+                        description={yagmurMelekTranslate("Please consider supporting the development of YagmurMelek by donating!")}
                         cardImage={donateImage}
                         backgroundImage={DONOR_BACKGROUND_IMAGE}
                         backgroundColor="#c3a3ce"
@@ -175,7 +175,7 @@ function VencordSettings() {
                 <SpecialCard
                     title={yagmurMelekTranslate("Contributions")}
                     subtitle={yagmurMelekTranslate("Thank you for contributing!")}
-                    description={yagmurMelekTranslate("Since you've contributed to Vencord you now have a cool new badge!")}
+                    description={yagmurMelekTranslate("Since you've contributed to YagmurMelek you now have a cool new badge!")}
                     cardImage={COZY_CONTRIB_IMAGE}
                     backgroundImage={CONTRIB_BACKGROUND_IMAGE}
                     backgroundColor="#EDCC87"

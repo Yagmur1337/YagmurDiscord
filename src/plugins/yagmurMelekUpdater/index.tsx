@@ -24,7 +24,18 @@ async function notifyUpdate() {
         if (result.rolledBack) showNotification({ title: "YagmurMelekDc", body: "Önceki sürüme geri dönüldü. Güncelleyici ayarlarını kontrol edin." });
         if (result.available && notified !== result.latest) {
             notified = result.latest;
-            showNotification({ title: "YagmurMelekDc güncellemesi hazır", body: `${result.latest} sürümü hazır. Eklentiler → YagmurMelekUpdater bölümünden indirebilirsiniz.` });
+            try {
+                await native.installUpdate();
+                showNotification({
+                    title: "YagmurMelekDc Otomatik Güncellendi 🚀",
+                    body: `${result.latest} sürümü başarıyla indirildi. Güncellemeyi uygulamak için Discord'u yeniden başlatın.`
+                });
+            } catch {
+                showNotification({
+                    title: "YagmurMelekDc Güncellemesi Hazır",
+                    body: `${result.latest} sürümü yayınlandı. Eklentiler → YagmurMelekUpdater bölümünden indirebilirsiniz.`
+                });
+            }
         }
     } catch { /* A failed background check should not interrupt Discord. */ }
 }
