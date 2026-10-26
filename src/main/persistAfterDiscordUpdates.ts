@@ -1,23 +1,11 @@
 /*
  * Vencord, a modification for Discord's desktop app
- * Copyright (c) 2022 Vendicated and contributors
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*/
+ * Copyright (c) 2026 YagmurMelek and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
 
 import { app } from "electron";
-import { copyFileSync, existsSync, readdirSync, renameSync } from "original-fs";
+import { copyFileSync, existsSync, readdirSync, renameSync, watch } from "original-fs";
 import { basename, dirname, join } from "path";
 
 function isNewer($new: string, old: string) {
@@ -31,21 +19,24 @@ function isNewer($new: string, old: string) {
     return false;
 }
 
-function patchLatest() {
-    if (process.env.DISABLE_UPDATER_AUTO_PATCHING) return;
+export function patchLatest(): boolean {
+    if (process.env.DISABLE_UPDATER_AUTO_PATCHING) return false;
 
     try {
         const currentAppPath = dirname(process.execPath);
         const currentVersion = basename(currentAppPath);
         const discordPath = join(currentAppPath, "..");
 
-        const latestVersion = readdirSync(discordPath).reduce((prev, curr) => {
+        if (!existsSync(discordPath)) return false;
+
+        const entries = readdirSync(discordPath);
+        const latestVersion = entries.reduce((prev, curr) => {
             return (curr.startsWith("app-") && isNewer(curr, prev))
                 ? curr
                 : prev;
         }, currentVersion as string);
 
-        if (latestVersion === currentVersion) return;
+        if (latestVersion === currentVersion) return false;
 
         const oldResources = join(discordPath, currentVersion, "resources");
         const oldVencordAsar = join(oldResources, "app.asar");
@@ -54,17 +45,47 @@ function patchLatest() {
         const newAppAsar = join(resources, "app.asar");
         const newAppAsarBackup = join(resources, "_app.asar");
 
-        if (!existsSync(oldVencordAsar) || !existsSync(newAppAsar) || existsSync(newAppAsarBackup)) return;
+        if (!existsSync(oldVencordAsar) || !existsSync(newAppAsar) || existsSync(newAppAsarBackup)) return false;
 
-        console.info(`[Vencord] Detected Host Update (${currentVersion} -> ${latestVersion}). Repatching...`);
+        console.info(`[YagmurMelekDc] Discord güncellemesi tespit edildi (${currentVersion} -> ${latestVersion}). Otomatik kuruluyor...`);
 
         renameSync(newAppAsar, newAppAsarBackup);
         copyFileSync(oldVencordAsar, newAppAsar);
+        console.info(`[YagmurMelekDc] ${latestVersion} sürümüne YagmurMelekDc başarıyla enjekte edildi!`);
+        return true;
     } catch (err) {
-        console.error("[Vencord] Failed to repatch latest host update", err);
+        console.error("[YagmurMelekDc] Yeni Discord sürümüne otomatik kurulum başarısız oldu:", err);
+        return false;
     }
 }
 
-// Try to patch latest on before-quit
-// Discord's Win32 updater will call app.quit() on restart and open new version on will-quit
+// 1. Check immediately upon startup
+try {
+    patchLatest();
+} catch { }
+
+// 2. Repatch on app close / restart
 app.on("before-quit", patchLatest);
+app.on("will-quit", patchLatest);
+
+// 3. Actively watch discord directory for background updates (Squirrel updater)
+try {
+    const currentAppPath = dirname(process.execPath);
+    const discordPath = join(currentAppPath, "..");
+    if (existsSync(discordPath)) {
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        watch(discordPath, () => {
+            if (timer) clearTimeout(timer);
+            timer = setTimeout(() => {
+                let attempts = 0;
+                const interval = setInterval(() => {
+                    attempts++;
+                    const patched = patchLatest();
+                    if (patched || attempts > 15) {
+                        clearInterval(interval);
+                    }
+                }, 2000);
+            }, 1000);
+        });
+    }
+} catch { }

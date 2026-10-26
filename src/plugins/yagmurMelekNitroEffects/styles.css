@@ -2,12 +2,15 @@
  * YagmurMelekNitroEffects styles
  */
 
-/* Hide Nitro upsell lock banners and preview buttons in profile editor */
+/* Hide Nitro upsell lock banners, trial badges and preview buttons in profile editor */
 .nitro-preview-upsell-lock,
 [class*="upsellOverlay"],
 [class*="nitroPreviewUpsell"],
 [class*="premiumFeatureBorder"],
-[class*="upsellBadge"] {
+[class*="upsellBadge"],
+[class*="tryItOutUpsell"],
+[class*="premiumTrialBadge"],
+[class*="upsellBanner"] {
     display: none !important;
 }
 

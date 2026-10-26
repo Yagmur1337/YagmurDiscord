@@ -15,7 +15,7 @@ internal record DiscordTarget(string Name, string Path)
 internal static class InstallEngine
 {
     public const string Marker = "YAGMURMELEK_DC_INSTALLER_V1";
-    public const string Version = "0.5.5";
+    public const string Version = "0.5.6";
     public static readonly string DataRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "YagmurMelekDc");
     public static string ResourcePath(string app) => Path.Combine(Path.GetFullPath(app), "resources");
     public static void CheckPath(string path)

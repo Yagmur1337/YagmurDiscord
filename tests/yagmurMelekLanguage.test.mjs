@@ -15,7 +15,7 @@ async function language(value) {
 test('Turkish translates UI and preserves unknown strings and format tokens', async () => {
     const t = await language('tr');
     assert.equal(t('Plugins'), 'Eklentiler');
-    assert.equal(t('Buy Vencord a coffee'), 'Vencord’a kahve ısmarla');
+    assert.equal(t('Buy YagmurMelek a coffee'), 'YagmurMelek’e kahve ısmarla');
     assert.equal(t('Apply voice transmission settings'), 'Ses aktarımı için ayarları uygula');
     assert.equal(t('UnknownPluginId'), 'UnknownPluginId');
     assert.ok(t('What text the hyperlink should use. {{NAME}} will be replaced with the emoji/sticker name.').includes('{{NAME}}'));
