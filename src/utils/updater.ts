@@ -68,8 +68,9 @@ export async function update() {
 export const getRepo = () => Unwrap(VencordNative.updater.getRepo());
 
 export async function maybePromptToUpdate(confirmMessage: string, checkForDev = false) {
-    if (IS_WEB || IS_UPDATER_DISABLED) return;
+    if (IS_WEB || IS_UPDATER_DISABLED || IS_STANDALONE) return;
     if (checkForDev && IS_DEV) return;
+    if (typeof VencordNative === "undefined" || !VencordNative?.updater) return;
 
     try {
         const isOutdated = await checkForUpdates();
@@ -83,6 +84,5 @@ export async function maybePromptToUpdate(confirmMessage: string, checkForDev = 
         }
     } catch (err) {
         UpdateLogger.error(err);
-        alert("That also failed :( Try updating or re-installing with the installer!");
     }
 }

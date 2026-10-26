@@ -210,19 +210,19 @@ export default definePlugin({
             replacement: [
                 {
                     match: /canUsePremiumProfileCustomization:function\((\i)\)\{return\s*/g,
-                    replace: "$&$self.isCurrentUser($1?.id)||"
+                    replace: "canUsePremiumProfileCustomization:function($1){return $self.isCurrentUser($1?.id)||"
                 },
                 {
                     match: /canUsePremiumGuildMemberProfile:function\((\i)\)\{return\s*/g,
-                    replace: "$&$self.isCurrentUser($1?.id)||"
+                    replace: "canUsePremiumGuildMemberProfile:function($1){return $self.isCurrentUser($1?.id)||"
                 },
                 {
                     match: /canUseClientThemes:function\((\i)\)\{return\s*/g,
-                    replace: "$&$self.isCurrentUser($1?.id)||"
+                    replace: "canUseClientThemes:function($1){return $self.isCurrentUser($1?.id)||"
                 },
                 {
                     match: /canUseCustomBackgrounds:function\((\i)\)\{return\s*/g,
-                    replace: "$&$self.isCurrentUser($1?.id)||"
+                    replace: "canUseCustomBackgrounds:function($1){return $self.isCurrentUser($1?.id)||"
                 }
             ]
         },
@@ -231,16 +231,16 @@ export default definePlugin({
             find: "hasThemeColors(){",
             replacement: [
                 {
-                    match: /get canUsePremiumProfileCustomization\(\)\{return /g,
-                    replace: "$&$self.isCurrentUser(this?.userId)||"
+                    match: /get canUsePremiumProfileCustomization\(\)\{return\s*/g,
+                    replace: "get canUsePremiumProfileCustomization(){return $self.isCurrentUser(this?.userId)||"
                 },
                 {
-                    match: /get canEditThemes\(\)\{return /g,
-                    replace: "$&$self.isCurrentUser(this?.userId)||"
+                    match: /get canEditThemes\(\)\{return\s*/g,
+                    replace: "get canEditThemes(){return $self.isCurrentUser(this?.userId)||"
                 },
                 {
-                    match: /getBannerURL\(\i\)\{let\{canAnimate:\i,size:\i\}=\i;return /g,
-                    replace: "$&$self.getCustomBanner(this.userId,arguments[0])||"
+                    match: /getBannerURL\(\i\)\{let\{canAnimate:\i,size:\i\}=\i;return\s*/g,
+                    replace: "$& $self.getCustomBanner(this.userId,arguments[0])||"
                 },
                 {
                     match: /constructor\((\i),(\i)\)\{/g,
@@ -282,7 +282,7 @@ export default definePlugin({
             replacement: [
                 {
                     match: /null!=(\i)&&\(0,(\i)\.jsx\)\("div",\{className:(\i\.\i),children:\1\}\)/,
-                    replace: "null!=$1&&(0,$2.jsx)(\"div\",{className:$3,children:[$1,$self.renderContinueFreeButton()]})"
+                    replace: "null!=$1&&(0,$2.jsxs)(\"div\",{className:$3,children:[$1,$self.renderContinueFreeButton()]})"
                 }
             ]
         }
@@ -576,7 +576,9 @@ export default definePlugin({
                 key="ym-continue-free"
                 type="button"
                 className="ym-continue-free-btn"
-                onClick={() => {
+                onClick={e => {
+                    e?.preventDefault?.();
+                    e?.stopPropagation?.();
                     const plugin = (window as any).Vencord?.Plugins?.plugins?.YagmurMelekNitroEffects;
                     plugin?.saveAndApplyTryItOut?.();
                 }}
