@@ -35,3 +35,31 @@ test("Patch 1 and Patch 2 ensure valid spacing and never produce returnVencord",
     assert.equal(replaced2.includes("return$self"), false, "Must never concatenate return and $self into return$self");
     assert.ok(replaced2.includes("return $self.isCurrentUser"), "Must include return followed by a space and $self");
 });
+
+test("Patch 1 unlocks canUseCollectibles and canUseAnimatedAvatar for current user", () => {
+    const minified = 'canUseCustomBackgrounds:function(e){return(0,p.RM)(p.Zc,e)},canUseCollectibles:eQ,canUseMonthlyOrbs:function(e){return(0,m.Nh)(e?.perks,u.bb.MONTHLY_ORBS)},canUseAnimatedAvatar:function(e){return(0,p.RM)(p.OW,e)}';
+    
+    const rColl = /canUseCollectibles:(\i),/g;
+    const canonRColl = new RegExp(rColl.source.replaceAll('\\i', '(?:[A-Za-z_$][\\w$]*)'), 'g');
+    const repColl = minified.replace(canonRColl, 'canUseCollectibles:function(u){return $self.isCurrentUser(u?.id)||$1(u)},');
+    
+    assert.ok(repColl.includes('canUseCollectibles:function(u){return $self.isCurrentUser(u?.id)||eQ(u)},'));
+
+    const rAnim = /canUseAnimatedAvatar:function\((\i)\)\{return\s*/g;
+    const canonRAnim = new RegExp(rAnim.source.replaceAll('\\i', '(?:[A-Za-z_$][\\w$]*)'), 'g');
+    const repAnim = repColl.replace(canonRAnim, 'canUseAnimatedAvatar:function($1){return $self.isCurrentUser($1?.id)||');
+    
+    assert.ok(repAnim.includes('canUseAnimatedAvatar:function(e){return $self.isCurrentUser(e?.id)||(0,p.RM)(p.OW,e)}'));
+});
+
+test("Patch 6 overrides hasTryItOutChanges to prevent Discord from collapsing 5 cards", () => {
+    const storeCode = 'getPendingChanges(e){return h[e??l.ME]??u}getTryItOutChanges(){return f}hasTryItOutChanges(){return Object.values(f).some(e=>void 0!==e)}hasUnsavedChanges(){return Object.values(h).some(e=>Object.values(e).some(e=>void 0!==e))}';
+    
+    const rStore = /hasTryItOutChanges\(\)\{return\s*Object\.values\(\i\)\.some\(\i=>void 0!==\i\)\}/;
+    const canonRStore = new RegExp(rStore.source.replaceAll('\\i', '(?:[A-Za-z_$][\\w$]*)'), 'g');
+    const replaced = storeCode.replace(canonRStore, 'hasTryItOutChanges(){return false}');
+
+    assert.ok(replaced.includes('hasTryItOutChanges(){return false}'));
+    assert.ok(replaced.includes('getTryItOutChanges(){return f}'), "getTryItOutChanges must remain untouched");
+});
+

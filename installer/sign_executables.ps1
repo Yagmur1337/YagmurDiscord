@@ -6,6 +6,7 @@ if (-not $cert) {
 Write-Host "Code signing certificate Thumbprint: $($cert.Thumbprint)"
 Write-Host "Subject: $($cert.Subject)"
 
+
 try {
     $pubStore = New-Object System.Security.Cryptography.X509Certificates.X509Store "TrustedPublisher", "CurrentUser"
     $pubStore.Open("ReadWrite")
@@ -17,10 +18,14 @@ try {
 }
 
 Export-Certificate -Cert $cert -FilePath "release/YagmurMelek.cer" -Force | Out-Null
-Write-Host "Exported public certificate to release/YagmurMelek.cer"
+Export-Certificate -Cert $cert -FilePath "installer/YagmurMelek.cer" -Force | Out-Null
+Write-Host "Exported public certificate to release/YagmurMelek.cer and installer/YagmurMelek.cer"
 
 Set-AuthenticodeSignature -FilePath "release/YagmurMelekDcInstaller.exe" -Certificate $cert -TimestampServer "http://timestamp.digicert.com" -HashAlgorithm SHA256 | Out-Null
 Set-AuthenticodeSignature -FilePath "release/YagmurMelekDcCli.exe" -Certificate $cert -TimestampServer "http://timestamp.digicert.com" -HashAlgorithm SHA256 | Out-Null
+
+Unblock-File -Path "release/YagmurMelekDcInstaller.exe" -ErrorAction SilentlyContinue
+Unblock-File -Path "release/YagmurMelekDcCli.exe" -ErrorAction SilentlyContinue
 
 $sigInstaller = Get-AuthenticodeSignature "release/YagmurMelekDcInstaller.exe"
 Write-Host "Installer Signature Status: $($sigInstaller.Status)"

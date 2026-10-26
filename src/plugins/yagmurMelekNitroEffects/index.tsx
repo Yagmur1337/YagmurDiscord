@@ -14,7 +14,7 @@ import { Devs } from "@utils/constants";
 import { copyWithToast } from "@utils/discord";
 import { Margins } from "@utils/margins";
 import definePlugin, { OptionType } from "@utils/types";
-import { Button, ColorPicker, FluxDispatcher, Forms, React, RestAPI, showToast, Text, TextInput, Toasts, UserProfileStore, UserStore, useState } from "@webpack/common";
+import { Button, closeModal, ColorPicker, FluxDispatcher, Forms, React, RestAPI, showToast, Text, TextInput, Toasts, UserProfileStore, UserStore, useState } from "@webpack/common";
 
 export interface Decoded3y3 {
     colors?: [number, number];
@@ -98,6 +98,12 @@ const settings = definePluginSettings({
     },
     avatarDecorationSkuId: {
         description: "Özel Avatar Çerçevesi SKU ID",
+        type: OptionType.STRING,
+        default: "",
+        restartNeeded: false,
+    },
+    displayNameStyles: {
+        description: "Özel Görünen Ad Stili (Yazı Tipi, Efekt, Renkler)",
         type: OptionType.STRING,
         default: "",
         restartNeeded: false,
@@ -223,6 +229,14 @@ export default definePlugin({
                 {
                     match: /canUseCustomBackgrounds:function\((\i)\)\{return\s*/g,
                     replace: "canUseCustomBackgrounds:function($1){return $self.isCurrentUser($1?.id)||"
+                },
+                {
+                    match: /canUseCollectibles:(\i),/g,
+                    replace: "canUseCollectibles:function(u){return $self.isCurrentUser(u?.id)||$1(u)},"
+                },
+                {
+                    match: /canUseAnimatedAvatar:function\((\i)\)\{return\s*/g,
+                    replace: "canUseAnimatedAvatar:function($1){return $self.isCurrentUser($1?.id)||"
                 }
             ]
         },
@@ -263,6 +277,10 @@ export default definePlugin({
                 {
                     match: /function (\i)\((\i)\)\{(\i\.h\.dispatch\(\{type:"USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_AVATAR_DECORATION",avatarDecoration:\2\}\))/g,
                     replace: "function $1($2){$self.onSetTryItOutAvatarDecoration($2);$3"
+                },
+                {
+                    match: /function (\i)\((\i)\)\{(\i\.h\.dispatch\(\{type:"USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_DISPLAY_NAME_STYLES",displayNameStyles:\2\}\))/g,
+                    replace: "function $1($2){$self.onSetTryItOutDisplayNameStyles($2);$3"
                 }
             ]
         },
@@ -283,6 +301,16 @@ export default definePlugin({
                 {
                     match: /null!=(\i)&&\(0,(\i)\.jsx\)\("div",\{className:(\i\.\i),children:\1\}\)/,
                     replace: "null!=$1&&(0,$2.jsxs)(\"div\",{className:$3,children:[$1,$self.renderContinueFreeButton()]})"
+                }
+            ]
+        },
+        // 6. Module 836602: Keep full 5-card layout active and prevent collapsing into restricted preview
+        {
+            find: "hasTryItOutChanges(){",
+            replacement: [
+                {
+                    match: /hasTryItOutChanges\(\)\{return\s*Object\.values\(\i\)\.some\(\i=>void 0!==\i\)\}/,
+                    replace: "hasTryItOutChanges(){return false}"
                 }
             ]
         }
@@ -409,6 +437,34 @@ export default definePlugin({
         }
     },
 
+    onSetTryItOutDisplayNameStyles(styles: any) {
+        try {
+            if (styles) {
+                settings.store.displayNameStyles = JSON.stringify(styles);
+                const current = UserStore.getCurrentUser();
+                if (current) {
+                    current.displayNameStyles = styles;
+                }
+                FluxDispatcher.dispatch({
+                    type: "USER_PROFILE_SETTINGS_SET_PENDING_CHANGES",
+                    pendingDisplayNameStyles: styles
+                });
+            } else if (styles === null) {
+                settings.store.displayNameStyles = "";
+                const current = UserStore.getCurrentUser();
+                if (current) {
+                    current.displayNameStyles = null;
+                }
+                FluxDispatcher.dispatch({
+                    type: "USER_PROFILE_SETTINGS_SET_PENDING_CHANGES",
+                    pendingDisplayNameStyles: null
+                });
+            }
+        } catch (err) {
+            console.error("[YagmurMelekNitroEffects] onSetTryItOutDisplayNameStyles error:", err);
+        }
+    },
+
     getCustomBanner(userId?: string, _options?: any): string | null {
         if (!userId || this.isCurrentUser(userId)) {
             const banner = settings.store.customBanner;
@@ -456,6 +512,11 @@ export default definePlugin({
                 }
                 if (settings.store.primaryColor && settings.store.accentColor) {
                     dp.themeColors = [settings.store.primaryColor, settings.store.accentColor];
+                }
+                if (settings.store.displayNameStyles) {
+                    try {
+                        dp.displayNameStyles = JSON.parse(settings.store.displayNameStyles);
+                    } catch { }
                 }
             }
         } catch (err) {
@@ -565,6 +626,19 @@ export default definePlugin({
                 }
                 delete e.avatar_decoration_sku_id;
             }
+
+            // 5. Display name styles (prevent Discord 400 Bad Request on saving)
+            if (e.display_name_styles !== undefined) {
+                settings.store.displayNameStyles = JSON.stringify(e.display_name_styles);
+                delete e.display_name_styles;
+            }
+            if (e.displayNameStyles !== undefined) {
+                settings.store.displayNameStyles = JSON.stringify(e.displayNameStyles);
+                delete e.displayNameStyles;
+            }
+            delete e.display_name_font_id;
+            delete e.display_name_effect_id;
+            delete e.display_name_colors;
         } catch (err) {
             console.error("[YagmurMelekNitroEffects] handleProfileSave error:", err);
         }
@@ -642,6 +716,14 @@ export default definePlugin({
             if (avatarDecorationSkuId) settings.store.avatarDecorationSkuId = avatarDecorationSkuId;
             if (profileEffectId) settings.store.profileEffectId = profileEffectId;
 
+            const rawStyles = tryItOut.tryItOutDisplayNameStyles || pending.pendingDisplayNameStyles;
+            if (rawStyles) {
+                settings.store.displayNameStyles = JSON.stringify(rawStyles);
+                if (currentUser) {
+                    currentUser.displayNameStyles = rawStyles;
+                }
+            }
+
             // 2. Encode to 3y3 bio tag
             const profile = UserProfileStore.getUserProfile(currentUser.id);
             let bio = profile?.bio ?? "";
@@ -685,9 +767,115 @@ export default definePlugin({
         }
     },
 
+    modalObserver: null as MutationObserver | null,
+
+    saveAndApplyDisplayNameStyle(picked?: any) {
+        try {
+            const currentUser = UserStore.getCurrentUser();
+            if (!currentUser) return;
+
+            let style = picked;
+            if (!style) {
+                try {
+                    const store = ((window as any).Vencord?.Webpack?.findStore?.("UserProfileSettingsStore")
+                        || ((window as any).Vencord?.Webpack?.wreq?.("836602") as any)?.A);
+                    const tryItOut = store?.getTryItOutChanges?.() || {};
+                    const pending = store?.getPendingChanges?.() || {};
+                    style = tryItOut.tryItOutDisplayNameStyles || pending.pendingDisplayNameStyles;
+                } catch { }
+            }
+
+            if (!style && settings.store.displayNameStyles) {
+                try {
+                    style = JSON.parse(settings.store.displayNameStyles);
+                } catch { }
+            }
+
+            if (style) {
+                settings.store.displayNameStyles = JSON.stringify(style);
+                currentUser.displayNameStyles = style;
+                FluxDispatcher.dispatch({
+                    type: "USER_PROFILE_SETTINGS_SET_PENDING_CHANGES",
+                    pendingDisplayNameStyles: style
+                });
+            }
+
+            try {
+                closeModal("display-name-styles-modal");
+            } catch { }
+
+            setTimeout(() => {
+                const closeBtn = document.querySelector<HTMLElement>('[role="dialog"] [aria-label*="Kapat" i], [role="dialog"] [aria-label*="Close" i]');
+                if (closeBtn) {
+                    closeBtn.click();
+                }
+            }, 60);
+
+            showToast("✨ YagmurDiscord: Görünen ad stiliniz nitrosuz olarak başarıyla uygulandı!", Toasts.Type.SUCCESS);
+        } catch (err) {
+            console.error("[YagmurMelekNitroEffects] saveAndApplyDisplayNameStyle error:", err);
+            showToast("Görünen ad stili kaydedilirken bir hata oluştu.", Toasts.Type.FAILURE);
+        }
+    },
+
+    setupModalButtonInjector() {
+        if (this.modalObserver) return;
+        const checkAndInject = () => {
+            const dialogs = document.querySelectorAll<HTMLElement>('[role="dialog"], [class*="modal_"], [class*="root_"]');
+            for (const dialog of dialogs) {
+                const text = dialog.innerText || "";
+                const isDisplayNameModal = text.includes("Görünen Ad Stili") ||
+                    text.includes("Display Name Style") ||
+                    text.includes("Beni Şaşırt") ||
+                    text.includes("Surprise Me");
+
+                if (isDisplayNameModal) {
+                    const footer = dialog.querySelector<HTMLElement>('[class*="footer_"], footer');
+                    if (footer && !footer.querySelector("#ym-nitrosuz-kullan-btn")) {
+                        const btn = document.createElement("button");
+                        btn.id = "ym-nitrosuz-kullan-btn";
+                        btn.type = "button";
+                        btn.className = "ym-nitro-style-apply-btn";
+                        btn.innerHTML = "✨ Nitrosuz Kullan";
+                        btn.title = "Seçilen yazı tipi, efekt ve renkleri Nitrosuz olarak uygula";
+                        btn.onclick = (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            this.saveAndApplyDisplayNameStyle();
+                        };
+
+                        const actionButtons = footer.querySelectorAll<HTMLElement>("button");
+                        if (actionButtons.length > 0) {
+                            const lastBtn = actionButtons[actionButtons.length - 1];
+                            lastBtn.parentNode?.insertBefore(btn, lastBtn);
+                        } else {
+                            footer.appendChild(btn);
+                        }
+                    }
+                }
+            }
+        };
+
+        this.modalObserver = new MutationObserver(checkAndInject);
+        this.modalObserver.observe(document.body, { childList: true, subtree: true });
+        checkAndInject();
+    },
+
     fluxListener: null as ((action: any) => void) | null,
 
     start() {
+        try {
+            if (settings.store.displayNameStyles) {
+                const styles = JSON.parse(settings.store.displayNameStyles);
+                const current = UserStore.getCurrentUser();
+                if (current && styles) {
+                    current.displayNameStyles = styles;
+                }
+            }
+        } catch { }
+
+        this.setupModalButtonInjector();
+
         this.fluxListener = (action: any) => {
             switch (action.type) {
                 case "USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_BANNER":
@@ -702,20 +890,30 @@ export default definePlugin({
                 case "USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_PROFILE_EFFECT":
                     this.onSetTryItOutProfileEffect(action.profileEffect);
                     break;
+                case "USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_DISPLAY_NAME_STYLES":
+                    this.onSetTryItOutDisplayNameStyles(action.displayNameStyles);
+                    break;
             }
         };
         FluxDispatcher.subscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_BANNER", this.fluxListener);
         FluxDispatcher.subscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_THEME_COLORS", this.fluxListener);
         FluxDispatcher.subscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_AVATAR_DECORATION", this.fluxListener);
         FluxDispatcher.subscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_PROFILE_EFFECT", this.fluxListener);
+        FluxDispatcher.subscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_DISPLAY_NAME_STYLES", this.fluxListener);
     },
 
     stop() {
+        if (this.modalObserver) {
+            this.modalObserver.disconnect();
+            this.modalObserver = null;
+        }
+        document.querySelector("#ym-nitrosuz-kullan-btn")?.remove();
         if (this.fluxListener) {
             FluxDispatcher.unsubscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_BANNER", this.fluxListener);
             FluxDispatcher.unsubscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_THEME_COLORS", this.fluxListener);
             FluxDispatcher.unsubscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_AVATAR_DECORATION", this.fluxListener);
             FluxDispatcher.unsubscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_PROFILE_EFFECT", this.fluxListener);
+            FluxDispatcher.unsubscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_DISPLAY_NAME_STYLES", this.fluxListener);
             this.fluxListener = null;
         }
     }

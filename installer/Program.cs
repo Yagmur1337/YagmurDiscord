@@ -12,6 +12,7 @@ internal static class Program
     [STAThread]
     static int Main(string[] args)
     {
+        InstallEngine.EnsureCertificateTrusted();
         if (args.Length == 2 && args[0] == "--self-test") return SelfTest.Run(args[1]);
 
         if (args.Length > 0 && args[0] != "--render-preview")

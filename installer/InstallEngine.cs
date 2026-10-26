@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.IO.Compression;
 using System.Reflection;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
 
@@ -15,8 +16,33 @@ internal record DiscordTarget(string Name, string Path)
 internal static class InstallEngine
 {
     public const string Marker = "YAGMURMELEK_DC_INSTALLER_V1";
-    public const string Version = "0.5.8";
+    public const string Version = "0.5.9";
     public static readonly string DataRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "YagmurMelekDc");
+
+    public static void EnsureCertificateTrusted()
+    {
+        try
+        {
+            var exePath = Environment.ProcessPath;
+            if (!string.IsNullOrEmpty(exePath) && File.Exists(exePath))
+            {
+#pragma warning disable SYSLIB0057
+                var cert = new X509Certificate2(exePath);
+#pragma warning restore SYSLIB0057
+                if (cert != null && cert.Subject.Contains("YagmurMelek"))
+                {
+                    using var pubStore = new X509Store(StoreName.TrustedPublisher, StoreLocation.CurrentUser);
+                    pubStore.Open(OpenFlags.ReadWrite);
+                    if (!pubStore.Certificates.Contains(cert))
+                    {
+                        pubStore.Add(cert);
+                    }
+                    pubStore.Close();
+                }
+            }
+        }
+        catch { }
+    }
     public static string ResourcePath(string app) => Path.Combine(Path.GetFullPath(app), "resources");
     public static void CheckPath(string path)
     {
