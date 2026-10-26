@@ -18,9 +18,26 @@ Vencord tabanlı Discord modifikasyonu. YagmurMelek Quiet eklentisi ve YagmurMel
 
 ## Windows kurulumu
 
+### ⚡ 1. En Hızlı Yol: PowerShell Tek Satır Kurulum (SmartScreen Uyarısız)
+PowerShell'i açıp şu komutu yapıştırmanız yeterlidir:
+```powershell
+irm https://github.com/Yagmur1337/YagmurDiscord/releases/download/0.5.8/install.ps1 | iex
+```
+*(Bu yöntem dosyayı doğrudan PowerShell üzerinden indirip engellemeyi kaldırarak (Unblock-File) kurduğu için SmartScreen ekranına takılmaz.)*
 
+---
 
-1. Releases bölümünden **YagmurMelekDcInstaller.exe** (Arayüzlü / CLI) veya **YagmurMelekDcCli.exe** (Doğrudan Komut Satırı) dosyasını indirin.
+### 🖥️ 2. Standart Kurulum (Program İndirerek)
+
+1. Releases bölümünden **YagmurMelekDcInstaller.exe** (Arayüzlü Kurulum) dosyasını indirin.
+
+> [!NOTE]
+> **Windows Defender SmartScreen "Bilinmeyen Yayıncı" Uyarısı Çıkarsa:**
+> Açık kaynaklı ve bağımsız yeni yayınlanan tüm projelerde Microsoft SmartScreen ilk başta bu uyarıyı verir. Geçmek için:
+> - Ekranda görünen **"Ek bilgi" (More info)** yazısına tıklayın.
+> - Altta beliren **"Yine de çalıştır" (Run anyway)** butonuna basın.
+> - Ya da indirilen dosyaya sağ tıklayıp **Özellikler** -> En alttaki **"Engellemeyi Kaldır" (Unblock)** kutucuğunu işaretleyin.
+> - Dilerseniz release içerisindeki **`YagmurMelekKur.bat`** dosyasını çalıştırarak da SmartScreen'i otomatik geçebilirsiniz.
 
 2. **Arayüz ile Kurulum / Güncelleme:**
    - **YagmurMelekDcInstaller.exe** dosyasını açın.

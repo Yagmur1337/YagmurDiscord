@@ -13,9 +13,8 @@ import { Flex } from "@components/Flex";
 import { Devs } from "@utils/constants";
 import { copyWithToast } from "@utils/discord";
 import { Margins } from "@utils/margins";
-import { classes } from "@utils/misc";
 import definePlugin, { OptionType } from "@utils/types";
-import { Button, ColorPicker, FluxDispatcher, Forms, React, showToast, Text, TextInput, Toasts, UserProfileStore, UserStore, useState } from "@webpack/common";
+import { Button, ColorPicker, FluxDispatcher, Forms, React, RestAPI, showToast, Text, TextInput, Toasts, UserProfileStore, UserStore, useState } from "@webpack/common";
 
 export interface Decoded3y3 {
     colors?: [number, number];
@@ -281,13 +280,13 @@ export default definePlugin({
                 }
             ]
         },
-        // 5. Module 202639: Add "YagmurMelek Discord İle Ücretsiz Devam Et" button beside Nitro Al
+        // 5. Module 202639: Add "YagmurDiscord İle Ücretsiz Devam Et" button beside Önizlemeden Çık (leadingAction: m)
         {
             find: "translateY(120%)",
             replacement: [
                 {
-                    match: /"string"==typeof (\i)\?/g,
-                    replace: "$self.renderContinueFreeButton(),$&"
+                    match: /null!=(\i)&&\(0,(\i)\.jsx\)\("div",\{className:(\i\.\i),children:\1\}\)/,
+                    replace: "null!=$1&&$self.renderContinueFreeLeadingAction($1,$3)"
                 }
             ]
         }
@@ -518,19 +517,22 @@ export default definePlugin({
         }
     },
 
-    renderContinueFreeButton: ErrorBoundary.wrap(() => {
+    renderContinueFreeLeadingAction: ErrorBoundary.wrap((m: any, className?: string) => {
         return (
-            <Button
-                key="ym-continue-free"
-                size={Button.Sizes.SMALL}
-                className="ym-continue-free-btn"
-                onClick={() => {
-                    const plugin = (window as any).Vencord?.Plugins?.plugins?.YagmurMelekNitroEffects;
-                    plugin?.saveAndApplyTryItOut?.();
-                }}
-            >
-                ✨ YagmurMelek Discord İle Ücretsiz Devam Et
-            </Button>
+            <div className={className} style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                {m}
+                <Button
+                    key="ym-continue-free"
+                    size={Button.Sizes.SMALL}
+                    className="ym-continue-free-btn"
+                    onClick={() => {
+                        const plugin = (window as any).Vencord?.Plugins?.plugins?.YagmurMelekNitroEffects;
+                        plugin?.saveAndApplyTryItOut?.();
+                    }}
+                >
+                    ✨ YagmurDiscord İle Ücretsiz Devam Et
+                </Button>
+            </div>
         );
     }, { noop: true }),
 
@@ -553,49 +555,57 @@ export default definePlugin({
             let bannerUrl = settings.store.customBanner;
             if (tryItOut.tryItOutBanner) {
                 const b = tryItOut.tryItOutBanner;
-                bannerUrl = (typeof b === "object" ? b.imageUri : b) || bannerUrl;
+                bannerUrl = (typeof b === "object" ? (b.imageUri || b.url) : b) || bannerUrl;
             }
 
             const avatarDecorationSkuId = tryItOut.tryItOutAvatarDecoration?.skuId
                 ? String(tryItOut.tryItOutAvatarDecoration.skuId)
-                : settings.store.avatarDecorationSkuId;
+                : (tryItOut.tryItOutAvatarDecoration?.id ? String(tryItOut.tryItOutAvatarDecoration.id) : settings.store.avatarDecorationSkuId);
 
             const profileEffectId = tryItOut.tryItOutProfileEffectId
                 ? String(tryItOut.tryItOutProfileEffectId)
                 : settings.store.profileEffectId;
 
+            // 1. Save to plugin settings
             if (primary) settings.store.primaryColor = primary;
             if (accent) settings.store.accentColor = accent;
             if (bannerUrl) settings.store.customBanner = bannerUrl;
             if (avatarDecorationSkuId) settings.store.avatarDecorationSkuId = avatarDecorationSkuId;
             if (profileEffectId) settings.store.profileEffectId = profileEffectId;
 
-            const payload: any = {};
-            if (primary && accent) {
-                payload.theme_colors = [primary, accent];
-            }
-            if (bannerUrl) {
-                payload.banner = bannerUrl;
-            }
-            if (avatarDecorationSkuId) {
-                payload.avatar_decoration_sku_id = avatarDecorationSkuId;
-            }
-            if (profileEffectId) {
-                payload.profile_effect_id = profileEffectId;
+            // 2. Encode to 3y3 bio tag
+            const profile = UserProfileStore.getUserProfile(currentUser.id);
+            let bio = profile?.bio ?? "";
+            bio = strip3y3(bio);
+            const bannerFor3y3 = bannerUrl && bannerUrl.startsWith("http") ? bannerUrl : undefined;
+            const encoded3y3 = encode3y3(primary || 0, accent || 0, bannerFor3y3);
+            const newBio = (bio.length > 0 ? bio + " " : "") + encoded3y3;
+
+            // 3. Save bio to Discord servers (non-nitro allowed)
+            try {
+                const actionMod = ((window as any).Vencord?.Webpack?.wreq?.("207803") as any);
+                if (actionMod?.gi) {
+                    await actionMod.gi({ bio: newBio });
+                } else if (RestAPI?.patch) {
+                    await RestAPI.patch({ url: "/users/@me/profile", body: { bio: newBio } });
+                }
+            } catch (apiErr) {
+                console.warn("[YagmurMelekNitroEffects] Profile bio save warning:", apiErr);
             }
 
-            // Save via Discord profile API
-            const actionMod = ((window as any).Vencord?.Webpack?.wreq?.("207803") as any);
-            if (actionMod?.gi) {
-                await actionMod.gi(payload);
-            } else {
-                this.handleProfileSave(payload);
+            // 4. Update local user profile store
+            if (profile) {
+                profile.bio = newBio;
+                if (primary && accent) {
+                    profile.themeColors = [primary, accent];
+                    profile.premiumType = 2;
+                }
             }
 
-            // Close the try it out preview bar
+            // 5. Close try-it-out preview notice
             FluxDispatcher.dispatch({ type: "USER_PROFILE_SETTINGS_RESET_TRY_IT_OUT_CHANGES" });
 
-            showToast("✨ YagmurMelek: Profiliniz ücretsiz olarak başarıyla kaydedildi!", Toasts.Type.SUCCESS);
+            showToast("✨ YagmurDiscord: Profiliniz ücretsiz olarak başarıyla kaydedildi!", Toasts.Type.SUCCESS);
         } catch (err) {
             console.error("[YagmurMelekNitroEffects] saveAndApplyTryItOut error:", err);
             showToast("Kaydedilirken bir hata oluştu.", Toasts.Type.FAILURE);
