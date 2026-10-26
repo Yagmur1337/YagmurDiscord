@@ -15,6 +15,7 @@ import { copyWithToast } from "@utils/discord";
 import { Margins } from "@utils/margins";
 import definePlugin, { OptionType } from "@utils/types";
 import { Button, closeModal, ColorPicker, FluxDispatcher, Forms, React, RestAPI, showToast, Text, TextInput, Toasts, UserProfileStore, UserStore, useState } from "@webpack/common";
+import virtualMerge from "virtual-merge";
 
 export interface Decoded3y3 {
     colors?: [number, number];
@@ -313,6 +314,32 @@ export default definePlugin({
                     replace: "hasTryItOutChanges(){return false}"
                 }
             ]
+        },
+        // 7. UserProfileStore: Hook getUserProfile to persist and return custom colors, banner, effect, deco
+        {
+            find: "UserProfileStore",
+            replacement: {
+                match: /(?<=getUserProfile\(\i\){return )(.+?)(?=})/,
+                replace: "$self.userProfileHook($1)"
+            }
+        },
+        // 8. Module 631670: Strip restricted fields from Account Save payload to prevent 400 Bad Request
+        {
+            find: "display_name_font_id=null",
+            replacement: [
+                {
+                    match: /void 0!==(\i)&&\((\i)\.avatar_decoration_sku_id=\1\?\.skuId\?\?null\),/g,
+                    replace: "$self.handleAccountDecoration($1);$2.avatar_decoration_sku_id=void 0,"
+                },
+                {
+                    match: /void 0!==(\i)&&\((\i)\.nameplate_sku_id=\1\?\.skuId\?\?null\),/g,
+                    replace: "$self.handleAccountNameplate($1);$2.nameplate_sku_id=void 0,"
+                },
+                {
+                    match: /null!=(\i)\?\((\i)\.display_name_font_id=\1\.fontId,\2\.display_name_effect_id=\1\.effectId,\2\.display_name_colors=\1\.colors\):null===\1&&\((\i)\.display_name_font_id=null,\3\.display_name_effect_id=null,\3\.display_name_colors=null\),/g,
+                    replace: "$self.handleAccountDisplayNameStyles($1);"
+                }
+            ]
         }
     ],
 
@@ -524,6 +551,192 @@ export default definePlugin({
         }
     },
 
+    userProfileHook(profile: any) {
+        if (!profile) return profile;
+        try {
+            const currentUser = UserStore.getCurrentUser();
+            const isMe = !profile.userId || profile.userId === currentUser?.id;
+
+            if (isMe) {
+                const primary = settings.store.primaryColor;
+                const accent = settings.store.accentColor;
+                const banner = settings.store.customBanner;
+                const effect = settings.store.profileEffectId;
+                const deco = settings.store.avatarDecorationSkuId;
+
+                const overrides: any = {
+                    premiumType: 2
+                };
+                if (primary && accent) {
+                    overrides.themeColors = [primary, accent];
+                }
+                if (banner) {
+                    overrides.banner = banner;
+                }
+                if (effect) {
+                    overrides.profileEffect = { id: effect, skuId: effect };
+                }
+                if (deco) {
+                    overrides.avatarDecoration = { skuId: deco };
+                }
+
+                return virtualMerge(profile, overrides);
+            }
+
+            if (profile.bio) {
+                const decoded = decode3y3(profile.bio);
+                if (decoded) {
+                    const overrides: any = {};
+                    if (decoded.colors && (!profile.themeColors || !settings.store.auto3y3ProfileColors)) {
+                        overrides.themeColors = decoded.colors;
+                        overrides.premiumType = 2;
+                    }
+                    if (decoded.banner && !profile.banner) {
+                        overrides.banner = decoded.banner;
+                    }
+                    return virtualMerge(profile, overrides);
+                }
+            }
+        } catch { }
+
+        return profile;
+    },
+
+    handleAccountDecoration(deco: any) {
+        try {
+            if (deco) {
+                const sku = typeof deco === "object" ? (deco.skuId || deco.id) : deco;
+                if (sku) settings.store.avatarDecorationSkuId = String(sku);
+            } else if (deco === null) {
+                settings.store.avatarDecorationSkuId = "";
+            }
+        } catch { }
+    },
+
+    handleAccountNameplate(_nameplate: any) {
+        // Can be stored if needed
+    },
+
+    handleAccountDisplayNameStyles(styles: any) {
+        try {
+            if (styles) {
+                settings.store.displayNameStyles = JSON.stringify(styles);
+                const current = UserStore.getCurrentUser();
+                if (current) current.displayNameStyles = styles;
+            } else if (styles === null) {
+                settings.store.displayNameStyles = "";
+                const current = UserStore.getCurrentUser();
+                if (current) current.displayNameStyles = null;
+            }
+        } catch { }
+    },
+
+    onSetPendingChanges(action: any) {
+        try {
+            if (action?.guildId) return;
+
+            if (action.pendingThemeColors !== undefined) {
+                if (Array.isArray(action.pendingThemeColors) && action.pendingThemeColors[0] != null && action.pendingThemeColors[1] != null) {
+                    settings.store.primaryColor = action.pendingThemeColors[0];
+                    settings.store.accentColor = action.pendingThemeColors[1];
+                } else if (action.pendingThemeColors === null) {
+                    settings.store.primaryColor = 0;
+                    settings.store.accentColor = 0;
+                }
+            }
+
+            if (action.pendingBanner !== undefined) {
+                if (action.pendingBanner) {
+                    let bannerUri: string | null = null;
+                    if (typeof action.pendingBanner === "object") {
+                        bannerUri = action.pendingBanner.imageUri || action.pendingBanner.url || action.pendingBanner.asset || action.pendingBanner.id || action.pendingBanner.src || null;
+                    } else if (typeof action.pendingBanner === "string") {
+                        bannerUri = action.pendingBanner;
+                    }
+                    if (bannerUri) settings.store.customBanner = bannerUri;
+                } else if (action.pendingBanner === null) {
+                    settings.store.customBanner = "";
+                }
+            }
+
+            if (action.pendingProfileEffect !== undefined) {
+                if (action.pendingProfileEffect) {
+                    const id = typeof action.pendingProfileEffect === "object"
+                        ? (action.pendingProfileEffect.id || action.pendingProfileEffect.skuId)
+                        : action.pendingProfileEffect;
+                    if (id) settings.store.profileEffectId = String(id);
+                } else if (action.pendingProfileEffect === null) {
+                    settings.store.profileEffectId = "";
+                }
+            }
+
+            if (action.pendingAvatarDecoration !== undefined) {
+                if (action.pendingAvatarDecoration) {
+                    const sku = typeof action.pendingAvatarDecoration === "object"
+                        ? (action.pendingAvatarDecoration.skuId || action.pendingAvatarDecoration.id)
+                        : action.pendingAvatarDecoration;
+                    if (sku) settings.store.avatarDecorationSkuId = String(sku);
+                } else if (action.pendingAvatarDecoration === null) {
+                    settings.store.avatarDecorationSkuId = "";
+                }
+            }
+
+            if (action.pendingDisplayNameStyles !== undefined) {
+                if (action.pendingDisplayNameStyles) {
+                    settings.store.displayNameStyles = JSON.stringify(action.pendingDisplayNameStyles);
+                    const current = UserStore.getCurrentUser();
+                    if (current) current.displayNameStyles = action.pendingDisplayNameStyles;
+                } else if (action.pendingDisplayNameStyles === null) {
+                    settings.store.displayNameStyles = "";
+                    const current = UserStore.getCurrentUser();
+                    if (current) current.displayNameStyles = null;
+                }
+            }
+        } catch (err) {
+            console.error("[YagmurMelekNitroEffects] onSetPendingChanges error:", err);
+        }
+    },
+
+    async onSubmitOrSuccess() {
+        try {
+            const currentUser = UserStore.getCurrentUser();
+            if (!currentUser) return;
+
+            const primary = settings.store.primaryColor;
+            const accent = settings.store.accentColor;
+            const banner = settings.store.customBanner;
+
+            if (settings.store.auto3y3ProfileColors && primary && accent) {
+                const currentProfile = UserProfileStore.getUserProfile(currentUser.id);
+                const currentBio = currentProfile?.bio ?? "";
+                const decoded = decode3y3(currentBio);
+
+                const bannerFor3y3 = banner?.startsWith("http") ? banner : undefined;
+                if (!decoded || decoded.colors?.[0] !== primary || decoded.colors?.[1] !== accent || (bannerFor3y3 && decoded.banner !== bannerFor3y3)) {
+                    const cleanBio = strip3y3(currentBio);
+                    const encoded = encode3y3(primary, accent, bannerFor3y3);
+                    const newBio = (cleanBio.length > 0 ? cleanBio + " " : "") + encoded;
+
+                    try {
+                        const actionMod = ((window as any).Vencord?.Webpack?.wreq?.("207803") as any);
+                        if (actionMod?.gi) {
+                            await actionMod.gi({ bio: newBio });
+                        } else if (RestAPI?.patch) {
+                            await RestAPI.patch({ url: "/users/@me/profile", body: { bio: newBio } });
+                        }
+                    } catch (err) {
+                        console.warn("[YagmurMelekNitroEffects] auto 3y3 bio save warning:", err);
+                    }
+                }
+            }
+
+            UserProfileStore.emitChange?.();
+            UserStore.emitChange?.();
+        } catch (err) {
+            console.error("[YagmurMelekNitroEffects] onSubmitOrSuccess error:", err);
+        }
+    },
+
     handleProfileSave(e: any, _guildId?: string) {
         try {
             const currentUser = UserStore.getCurrentUser();
@@ -531,22 +744,23 @@ export default definePlugin({
 
             let currentBanner = settings.store.customBanner;
 
-            // Also check tryItOut changes if banner or deco was selected in try-it-out!
+            // Also check pending and tryItOut changes if banner or deco was selected!
             try {
                 const store = ((window as any).Vencord?.Webpack?.findStore?.("UserProfileSettingsStore")
                     || ((window as any).Vencord?.Webpack?.wreq?.("836602") as any)?.A);
+                const pending = store?.getPendingChanges?.() || {};
                 const tryItOut = store?.getTryItOutChanges?.() || {};
-                if (!e.banner && tryItOut.tryItOutBanner) {
-                    e.banner = tryItOut.tryItOutBanner;
+                if (e.banner === undefined && (pending.pendingBanner !== undefined || tryItOut.tryItOutBanner !== undefined)) {
+                    e.banner = pending.pendingBanner !== undefined ? pending.pendingBanner : tryItOut.tryItOutBanner;
                 }
-                if (!e.avatar_decoration_sku_id && tryItOut.tryItOutAvatarDecoration) {
-                    e.avatar_decoration_sku_id = tryItOut.tryItOutAvatarDecoration;
+                if (e.avatar_decoration_sku_id === undefined && (pending.pendingAvatarDecoration !== undefined || tryItOut.tryItOutAvatarDecoration !== undefined)) {
+                    e.avatar_decoration_sku_id = pending.pendingAvatarDecoration !== undefined ? pending.pendingAvatarDecoration : tryItOut.tryItOutAvatarDecoration;
                 }
-                if (!e.profile_effect_id && tryItOut.tryItOutProfileEffect) {
-                    e.profile_effect_id = tryItOut.tryItOutProfileEffect;
+                if (e.profile_effect_id === undefined && (pending.pendingProfileEffect !== undefined || tryItOut.tryItOutProfileEffect !== undefined)) {
+                    e.profile_effect_id = pending.pendingProfileEffect !== undefined ? pending.pendingProfileEffect : tryItOut.tryItOutProfileEffect;
                 }
-                if (!e.theme_colors && tryItOut.tryItOutThemeColors) {
-                    e.theme_colors = tryItOut.tryItOutThemeColors;
+                if (e.theme_colors === undefined && (pending.pendingThemeColors !== undefined || tryItOut.tryItOutThemeColors !== undefined)) {
+                    e.theme_colors = pending.pendingThemeColors !== undefined ? pending.pendingThemeColors : tryItOut.tryItOutThemeColors;
                 }
             } catch { }
 
@@ -574,34 +788,30 @@ export default definePlugin({
             if (e.theme_colors !== undefined) {
                 if (Array.isArray(e.theme_colors) && e.theme_colors[0] != null && e.theme_colors[1] != null) {
                     const [primary, accent] = e.theme_colors;
-                    if (settings.store.auto3y3ProfileColors) {
-                        const encoded = encode3y3(primary, accent, currentBanner?.startsWith("http") ? currentBanner : undefined);
-                        let bio = typeof e.bio === "string"
-                            ? e.bio
-                            : (UserProfileStore.getUserProfile(currentUser.id)?.bio ?? "");
-                        bio = strip3y3(bio);
-                        e.bio = (bio.length > 0 ? bio + " " : "") + encoded;
-                    }
                     settings.store.primaryColor = primary;
                     settings.store.accentColor = accent;
-                } else {
-                    let bio = typeof e.bio === "string"
-                        ? e.bio
-                        : (UserProfileStore.getUserProfile(currentUser.id)?.bio ?? "");
-                    e.bio = strip3y3(bio);
+                } else if (e.theme_colors === null) {
                     settings.store.primaryColor = 0;
                     settings.store.accentColor = 0;
                 }
                 delete e.theme_colors;
-            } else if (currentBanner && currentBanner.startsWith("http") && settings.store.auto3y3ProfileColors) {
-                const primary = settings.store.primaryColor || 0;
-                const accent = settings.store.accentColor || 0;
-                const encoded = encode3y3(primary, accent, currentBanner);
+            }
+
+            // Always auto encode 3y3 into bio if colors or banner are present
+            const primary = settings.store.primaryColor || 0;
+            const accent = settings.store.accentColor || 0;
+            if (settings.store.auto3y3ProfileColors && (primary || accent || (currentBanner && currentBanner.startsWith("http")))) {
+                const encoded = encode3y3(primary, accent, currentBanner?.startsWith("http") ? currentBanner : undefined);
                 let bio = typeof e.bio === "string"
                     ? e.bio
                     : (UserProfileStore.getUserProfile(currentUser.id)?.bio ?? "");
                 bio = strip3y3(bio);
                 e.bio = (bio.length > 0 ? bio + " " : "") + encoded;
+            } else if (e.theme_colors === null) {
+                let bio = typeof e.bio === "string"
+                    ? e.bio
+                    : (UserProfileStore.getUserProfile(currentUser.id)?.bio ?? "");
+                e.bio = strip3y3(bio);
             }
 
             // 3. Profile effect
@@ -893,13 +1103,40 @@ export default definePlugin({
                 case "USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_DISPLAY_NAME_STYLES":
                     this.onSetTryItOutDisplayNameStyles(action.displayNameStyles);
                     break;
+                case "USER_PROFILE_SETTINGS_SET_PENDING_CHANGES":
+                    this.onSetPendingChanges(action);
+                    break;
+                case "USER_PROFILE_SETTINGS_SUBMIT":
+                case "USER_PROFILE_SETTINGS_SUBMIT_SUCCESS":
+                case "USER_PROFILE_UPDATE_SUCCESS":
+                    this.onSubmitOrSuccess();
+                    break;
+                case "CURRENT_USER_UPDATE":
+                    try {
+                        const current = UserStore.getCurrentUser();
+                        if (current) {
+                            if (settings.store.displayNameStyles) {
+                                current.displayNameStyles = JSON.parse(settings.store.displayNameStyles);
+                            }
+                            if (settings.store.avatarDecorationSkuId) {
+                                current.avatarDecoration = { skuId: settings.store.avatarDecorationSkuId };
+                            }
+                        }
+                    } catch { }
+                    break;
             }
         };
+
         FluxDispatcher.subscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_BANNER", this.fluxListener);
         FluxDispatcher.subscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_THEME_COLORS", this.fluxListener);
         FluxDispatcher.subscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_AVATAR_DECORATION", this.fluxListener);
         FluxDispatcher.subscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_PROFILE_EFFECT", this.fluxListener);
         FluxDispatcher.subscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_DISPLAY_NAME_STYLES", this.fluxListener);
+        FluxDispatcher.subscribe("USER_PROFILE_SETTINGS_SET_PENDING_CHANGES", this.fluxListener);
+        FluxDispatcher.subscribe("USER_PROFILE_SETTINGS_SUBMIT", this.fluxListener);
+        FluxDispatcher.subscribe("USER_PROFILE_SETTINGS_SUBMIT_SUCCESS", this.fluxListener);
+        FluxDispatcher.subscribe("USER_PROFILE_UPDATE_SUCCESS", this.fluxListener);
+        FluxDispatcher.subscribe("CURRENT_USER_UPDATE", this.fluxListener);
     },
 
     stop() {
@@ -914,6 +1151,11 @@ export default definePlugin({
             FluxDispatcher.unsubscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_AVATAR_DECORATION", this.fluxListener);
             FluxDispatcher.unsubscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_PROFILE_EFFECT", this.fluxListener);
             FluxDispatcher.unsubscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_DISPLAY_NAME_STYLES", this.fluxListener);
+            FluxDispatcher.unsubscribe("USER_PROFILE_SETTINGS_SET_PENDING_CHANGES", this.fluxListener);
+            FluxDispatcher.unsubscribe("USER_PROFILE_SETTINGS_SUBMIT", this.fluxListener);
+            FluxDispatcher.unsubscribe("USER_PROFILE_SETTINGS_SUBMIT_SUCCESS", this.fluxListener);
+            FluxDispatcher.unsubscribe("USER_PROFILE_UPDATE_SUCCESS", this.fluxListener);
+            FluxDispatcher.unsubscribe("CURRENT_USER_UPDATE", this.fluxListener);
             this.fluxListener = null;
         }
     }

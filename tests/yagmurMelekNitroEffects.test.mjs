@@ -63,3 +63,34 @@ test("Patch 6 overrides hasTryItOutChanges to prevent Discord from collapsing 5 
     assert.ok(replaced.includes('getTryItOutChanges(){return f}'), "getTryItOutChanges must remain untouched");
 });
 
+test("Patch 7 UserProfileStore hook matches getUserProfile", () => {
+    const userProfileStoreCode = 'getUserProfile(e){return v.get(e)}getGuildMemberProfile(e,t){return null==t?null:b.get(e)?.get(t)??null}';
+    const rProfile = /(?<=getUserProfile\(\i\){return )(.+?)(?=})/;
+    const canonRProfile = new RegExp(rProfile.source.replaceAll('\\i', '(?:[A-Za-z_$][\\w$]*)'));
+
+    assert.ok(canonRProfile.test(userProfileStoreCode), "Must match getUserProfile implementation");
+    const replaced = userProfileStoreCode.replace(canonRProfile, '$self.userProfileHook($1)');
+    assert.ok(replaced.includes('getUserProfile(e){return $self.userProfileHook(v.get(e))}'));
+});
+
+test("Patch 8 strips restricted fields from Account Save payload in module 631670", () => {
+    const mod631670Code = 'void 0!==I&&(R.avatar_decoration_sku_id=I?.skuId??null),void 0!==g&&(R.nameplate_sku_id=g?.skuId??null),void 0!==S&&(R.primary_guild_id=S),null!=N?(R.display_name_font_id=N.fontId,R.display_name_effect_id=N.effectId,R.display_name_colors=N.colors):null===N&&(R.display_name_font_id=null,R.display_name_effect_id=null,R.display_name_colors=null),void 0!==C&&(R.typing_indicator_style=null!=C?(0,o.El)(C):null);';
+
+    const rDeco = new RegExp(/void 0!==(\i)&&\((\i)\.avatar_decoration_sku_id=\1\?\.skuId\?\?null\),/g.source.replaceAll('\\i', '(?:[A-Za-z_$][\\w$]*)'), 'g');
+    const rNameplate = new RegExp(/void 0!==(\i)&&\((\i)\.nameplate_sku_id=\1\?\.skuId\?\?null\),/g.source.replaceAll('\\i', '(?:[A-Za-z_$][\\w$]*)'), 'g');
+    const rStyles = new RegExp(/null!=(\i)\?\((\i)\.display_name_font_id=\1\.fontId,\2\.display_name_effect_id=\1\.effectId,\2\.display_name_colors=\1\.colors\):null===\1&&\((\i)\.display_name_font_id=null,\3\.display_name_effect_id=null,\3\.display_name_colors=null\),/g.source.replaceAll('\\i', '(?:[A-Za-z_$][\\w$]*)'), 'g');
+
+    assert.ok(rDeco.test(mod631670Code));
+    assert.ok(rNameplate.test(mod631670Code));
+    assert.ok(rStyles.test(mod631670Code));
+
+    let replaced = mod631670Code.replace(rDeco, '$self.handleAccountDecoration($1);$2.avatar_decoration_sku_id=void 0,');
+    replaced = replaced.replace(rNameplate, '$self.handleAccountNameplate($1);$2.nameplate_sku_id=void 0,');
+    replaced = replaced.replace(rStyles, '$self.handleAccountDisplayNameStyles($1);');
+
+    assert.ok(replaced.includes('$self.handleAccountDecoration(I);R.avatar_decoration_sku_id=void 0,'));
+    assert.ok(replaced.includes('$self.handleAccountNameplate(g);R.nameplate_sku_id=void 0,'));
+    assert.ok(replaced.includes('$self.handleAccountDisplayNameStyles(N);'));
+});
+
+

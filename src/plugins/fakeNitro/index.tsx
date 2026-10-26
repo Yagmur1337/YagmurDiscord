@@ -331,7 +331,13 @@ export default definePlugin({
             find: '["strong","em","u","text","inlineCode","s","spoiler"]',
             replacement: [
                 {
-                    // Call our function to decide whether the emoji link should be kept or not
+                    // Call our function to decide whether the emoji link should be kept or not (modern Discord)
+                    predicate: () => settings.store.transformEmojis,
+                    match: /(\i)=\(0,(\i)\.k5\)\((\i)\)&&\(0,\2\.iz\)\(\(0,\2\.dn\)\((\i),(\i)\)\)\?\[\]:\4/,
+                    replace: "$1=(0,$2.k5)($3)&&(0,$2.iz)((0,$2.dn)($4,$5))&&!$self.shouldKeepEmojiLink($4)?[]:$4"
+                },
+                {
+                    // Legacy fallback for older Discord versions
                     predicate: () => settings.store.transformEmojis,
                     match: /1!==(\i)\.length\|\|1!==\i\.length/,
                     replace: (m, content) => `${m}||$self.shouldKeepEmojiLink(${content}[0])`
@@ -723,8 +729,17 @@ export default definePlugin({
         });
     },
 
-    shouldKeepEmojiLink(link: any) {
-        return link.target && fakeNitroEmojiRegex.test(link.target);
+    shouldKeepEmojiLink(node: any): boolean {
+        if (!node) return false;
+        if (Array.isArray(node)) {
+            return node.some(n => this.shouldKeepEmojiLink(n));
+        }
+        if (node.type === "paragraph" && Array.isArray(node.content)) {
+            return node.content.some((n: any) => this.shouldKeepEmojiLink(n));
+        }
+        const target = node.target || node.props?.href || node.content;
+        if (typeof target === "string" && fakeNitroEmojiRegex.test(target)) return true;
+        return false;
     },
 
     addFakeNotice(type: FakeNoticeType, node: Array<ReactNode>, fake: boolean) {
