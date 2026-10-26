@@ -30,3 +30,20 @@
     margin-top: 10px;
     border: 1px solid var(--background-modifier-accent);
 }
+
+.ym-continue-free-btn {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    border-radius: 4px !important;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4) !important;
+    margin-right: 8px !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.ym-continue-free-btn:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.65) !important;
+    background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+}
+

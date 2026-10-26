@@ -24,10 +24,10 @@
     <NeutralLanguage>tr-TR</NeutralLanguage>
 
     <!-- Sürüm Bilgileri -->
-    <Version>0.5.6</Version>
-    <FileVersion>0.5.6.0</FileVersion>
-    <AssemblyVersion>0.5.6.0</AssemblyVersion>
-    <InformationalVersion>0.5.6 - Yagmures Holding</InformationalVersion>
+    <Version>0.5.7</Version>
+    <FileVersion>0.5.7.0</FileVersion>
+    <AssemblyVersion>0.5.7.0</AssemblyVersion>
+    <InformationalVersion>0.5.7 - Yagmures Holding</InformationalVersion>
 
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
