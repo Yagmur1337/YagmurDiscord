@@ -13,6 +13,7 @@ import { Flex } from "@components/Flex";
 import { Devs } from "@utils/constants";
 import { copyWithToast } from "@utils/discord";
 import { Margins } from "@utils/margins";
+import { classes } from "@utils/misc";
 import definePlugin, { OptionType } from "@utils/types";
 import { Button, closeModal, ColorPicker, FluxDispatcher, Forms, React, RestAPI, showToast, Text, TextInput, Toasts, UserProfileStore, UserStore, useState } from "@webpack/common";
 import virtualMerge from "virtual-merge";
@@ -121,31 +122,237 @@ function SettingsAboutComponent() {
     const [accent, setAccent] = useState(detectedColors[1] || 0);
     const [bannerUrl, setBannerUrl] = useState(detected3y3?.banner || settings.store.customBanner || "");
 
+    let parsedStyle: any = null;
+    try {
+        if (settings.store.displayNameStyles) {
+            parsedStyle = JSON.parse(settings.store.displayNameStyles);
+        }
+    } catch { }
+
+    const [fontId, setFontId] = useState(parsedStyle?.fontId ?? 1);
+    const [effectId, setEffectId] = useState(parsedStyle?.effectId ?? 3);
+    const [styleColor, setStyleColor] = useState(parsedStyle?.colors?.[0] ?? 0xd042f5);
+
+    const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const dataUrl = reader.result as string;
+            setBannerUrl(dataUrl);
+            settings.store.customBanner = dataUrl;
+            const plugin = (window as any).Vencord?.Plugins?.plugins?.YagmurMelekNitroEffects;
+            plugin?.updateDynamicStyles?.();
+            const current = UserStore.getCurrentUser();
+            if (current) {
+                const profile = UserProfileStore.getUserProfile(current.id);
+                if (profile) profile.banner = dataUrl;
+            }
+            UserProfileStore.emitChange?.();
+            showToast("✨ Profil afişiniz başarıyla yüklendi ve sabitlendi!", Toasts.Type.SUCCESS);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const applyHardcodedStyles = () => {
+        const plugin = (window as any).Vencord?.Plugins?.plugins?.YagmurMelekNitroEffects;
+        const newStyle = {
+            fontId,
+            effectId,
+            colors: [styleColor]
+        };
+        settings.store.displayNameStyles = JSON.stringify(newStyle);
+        settings.store.primaryColor = primary;
+        settings.store.accentColor = accent;
+        settings.store.customBanner = bannerUrl;
+
+        plugin?.applyDisplayNameStylesGlobally?.(newStyle);
+        plugin?.updateDynamicStyles?.();
+        plugin?.saveAndApplyTryItOut?.();
+        showToast("🚀 Tüm profil ayarları (Afiş, Renkler ve Ad Stili) Discord'a sabitlendi!", Toasts.Type.SUCCESS);
+    };
+
+    const clearBanner = () => {
+        setBannerUrl("");
+        settings.store.customBanner = "";
+        const plugin = (window as any).Vencord?.Plugins?.plugins?.YagmurMelekNitroEffects;
+        plugin?.updateDynamicStyles?.();
+        const current = UserStore.getCurrentUser();
+        if (current) {
+            const profile = UserProfileStore.getUserProfile(current.id);
+            if (profile) profile.banner = null;
+        }
+        UserProfileStore.emitChange?.();
+        showToast("Afiş kaldırıldı.", Toasts.Type.SUCCESS);
+    };
+
+    const clearStyle = () => {
+        settings.store.displayNameStyles = "";
+        const plugin = (window as any).Vencord?.Plugins?.plugins?.YagmurMelekNitroEffects;
+        const current = UserStore.getCurrentUser();
+        if (current) current.displayNameStyles = null;
+        plugin?.updateDynamicStyles?.();
+        UserProfileStore.emitChange?.();
+        UserStore.emitChange?.();
+        showToast("Görünen ad stili temizlendi.", Toasts.Type.SUCCESS);
+    };
+
+    const effectOptions = [
+        { id: 1, name: "Sabit (Static)" },
+        { id: 2, name: "Gradyan (Gradient)" },
+        { id: 3, name: "Neon (Parlayan Neon)" },
+        { id: 4, name: "Çizgi Film (Comic)" },
+        { id: 5, name: "Pop (Pop Art)" },
+        { id: 6, name: "Şekercik (Candy)" },
+        { id: 7, name: "Prizma (Prism / Rainbow)" },
+    ];
+
     return (
         <section className={Margins.top8}>
             <div className="ym-nitro-settings-card">
-                <Forms.FormTitle tag="h3">⚡ YagmurMelekNitroEffects Hakkında</Forms.FormTitle>
+                <Forms.FormTitle tag="h2">⚡ YagmurDiscord Profil ve Nitro Özelleştirme</Forms.FormTitle>
                 <Forms.FormText>
-                    Bu eklenti ile <strong>Discord Ayarları &rarr; Profiller</strong> bölümünden
-                    renkleri ve afişi doğrudan seçebilirsiniz.
-                </Forms.FormText>
-                <Forms.FormText className={Margins.top8}>
-                    <ul>
-                        <li>
-                            <strong>Doğrudan Profil Düzenleme:</strong> Profil ekranında renklerinizi ve afişinizi seçip
-                            &quot;Değişiklikleri Kaydet&quot; dediğinizde değişiklikler otomatik olarak Bio&apos;nuza 3y3 görünmez
-                            koduyla işlenir. Diğer YagmurMelek Discord kullanıcıları da afişinizi ve renklerinizi görür.
-                        </li>
-                        <li>
-                            <strong>Afiş Desteği:</strong> Profil afişinizi doğrudan seçebilir veya aşağıya bir görsel URL&apos;si
-                            yapıştırabilirsiniz.
-                        </li>
-                    </ul>
+                    Bu panelden profil afişinizi (GIF veya resim), görünen ad stilinizi (neon, gradyan, yazı tipi ve renk),
+                    ve profil tema renklerinizi doğrudan ayarlayabilir ve <strong>hardcoded (kesin kalıcı)</strong> olarak sabitleyebilirsiniz.
                 </Forms.FormText>
 
                 <Divider className={classes(Margins.top16, Margins.bottom16)} />
 
-                <Forms.FormTitle tag="h3">🎨 Profil Renkleri</Forms.FormTitle>
+                {/* 1. AFİŞ (BANNER) */}
+                <Forms.FormTitle tag="h3">🖼️ Profil Afişi (GIF / Resim)</Forms.FormTitle>
+                <Forms.FormText>
+                    Aşağıya bir doğrudan görsel/GIF URL&apos;si girebilir veya doğrudan bilgisayarınızdan bir GIF/Resim seçebilirsiniz.
+                </Forms.FormText>
+                <Flex gap="1em" alignItems="center" className={Margins.top8}>
+                    <TextInput
+                        value={bannerUrl}
+                        placeholder="https://media.tenor.com/... veya dosya yükleyin"
+                        onChange={(val: string) => {
+                            setBannerUrl(val);
+                            settings.store.customBanner = val;
+                            const plugin = (window as any).Vencord?.Plugins?.plugins?.YagmurMelekNitroEffects;
+                            plugin?.updateDynamicStyles?.();
+                        }}
+                        style={{ flex: 1 }}
+                    />
+                    <input
+                        type="file"
+                        accept="image/*,.gif,.png,.jpg,.jpeg,.webp"
+                        ref={fileInputRef}
+                        style={{ display: "none" }}
+                        onChange={handleFileUpload}
+                    />
+                    <Button
+                        color={Button.Colors.PRIMARY}
+                        size={Button.Sizes.SMALL}
+                        onClick={() => fileInputRef.current?.click()}
+                    >
+                        📁 Bilgisayardan GIF / Resim Yükle
+                    </Button>
+                    {bannerUrl && (
+                        <Button
+                            color={Button.Colors.RED}
+                            size={Button.Sizes.SMALL}
+                            onClick={clearBanner}
+                        >
+                            Afişi Kaldır
+                        </Button>
+                    )}
+                </Flex>
+
+                {bannerUrl && (
+                    <div className={Margins.top8}>
+                        <img src={bannerUrl} alt="Afiş Önizleme" className="ym-nitro-banner-preview" />
+                    </div>
+                )}
+
+                <Divider className={classes(Margins.top16, Margins.bottom16)} />
+
+                {/* 2. GÖRÜNEN AD STİLİ */}
+                <Forms.FormTitle tag="h3">✨ Görünen Ad Stili (Neon / Gradyan / Yazı Tipi)</Forms.FormTitle>
+                <Forms.FormText>
+                    Discord Nitro gerektirmeden istediğiniz fontu, efekti ve rengi seçip profilinize sabitleyin.
+                </Forms.FormText>
+
+                {/* CANLI ÖNİZLEME */}
+                <div className="ym-style-preview-box">
+                    <span
+                        className="ym-styled-name-preview"
+                        style={{
+                            color: effectId === 3 ? "#ffffff" : `#${styleColor.toString(16).padStart(6, "0")}`,
+                            textShadow: effectId === 3 ? `0 0 6px #${styleColor.toString(16).padStart(6, "0")}, 0 0 14px #${styleColor.toString(16).padStart(6, "0")}, 0 0 22px #${styleColor.toString(16).padStart(6, "0")}` : "none",
+                            background: effectId === 2 ? `linear-gradient(90deg, #${styleColor.toString(16).padStart(6, "0")}, #ffffff)` : effectId === 7 ? "linear-gradient(90deg, #ff0055, #ffaa00, #33cc33, #0099ff, #cc00ff)" : "none",
+                            WebkitBackgroundClip: (effectId === 2 || effectId === 7) ? "text" : "unset",
+                            WebkitTextFillColor: (effectId === 2 || effectId === 7) ? "transparent" : "unset",
+                            fontWeight: 700,
+                            fontSize: "18px"
+                        }}
+                    >
+                        {currentUser?.username || "Kullanıcı Adı"}
+                    </span>
+                </div>
+
+                <Flex gap="1.5em" alignItems="center" wrap={Flex.Wrap.WRAP} className={Margins.top8}>
+                    <div>
+                        <Text variant="text-xs/normal" style={{ marginBottom: "4px" }}>Efekt Seçimi:</Text>
+                        <select
+                            value={effectId}
+                            onChange={e => setEffectId(parseInt(e.target.value, 10))}
+                            className="ym-select-input"
+                        >
+                            {effectOptions.map(opt => (
+                                <option key={opt.id} value={opt.id}>{opt.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <Text variant="text-xs/normal" style={{ marginBottom: "4px" }}>Yazı Tipi (1-12):</Text>
+                        <select
+                            value={fontId}
+                            onChange={e => setFontId(parseInt(e.target.value, 10))}
+                            className="ym-select-input"
+                        >
+                            {Array.from({ length: 12 }, (_, i) => (
+                                <option key={i + 1} value={i + 1}>Font {i + 1}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <Text variant="text-xs/normal" style={{ marginBottom: "4px" }}>Stil Rengi:</Text>
+                        <ColorPicker
+                            color={styleColor}
+                            label={<span />}
+                            onChange={(c: number) => setStyleColor(c)}
+                        />
+                    </div>
+
+                    <Button
+                        color={Button.Colors.GREEN}
+                        size={Button.Sizes.SMALL}
+                        onClick={applyHardcodedStyles}
+                        style={{ marginTop: "16px" }}
+                    >
+                        ✨ Stili Sabitle ve Uygula
+                    </Button>
+
+                    <Button
+                        color={Button.Colors.RED}
+                        size={Button.Sizes.SMALL}
+                        onClick={clearStyle}
+                        style={{ marginTop: "16px" }}
+                    >
+                        Stili Temizle
+                    </Button>
+                </Flex>
+
+                <Divider className={classes(Margins.top16, Margins.bottom16)} />
+
+                {/* 3. PROFİL RENKLERİ */}
+                <Forms.FormTitle tag="h3">🎨 Profil Tema Renkleri</Forms.FormTitle>
                 <Flex gap="1.5em" alignItems="center" className={Margins.top8}>
                     <ColorPicker
                         color={primary}
@@ -177,25 +384,15 @@ function SettingsAboutComponent() {
 
                 <Divider className={classes(Margins.top16, Margins.bottom16)} />
 
-                <Forms.FormTitle tag="h3">🖼️ Özel Profil Afişi (Banner URL)</Forms.FormTitle>
-                <TextInput
-                    value={bannerUrl}
-                    placeholder="https://i.imgur.com/example.png"
-                    onChange={(val: string) => {
-                        setBannerUrl(val);
-                        settings.store.customBanner = val;
-                    }}
-                    className={Margins.top8}
-                />
-                <Forms.FormText className={Margins.top8}>
-                    Buraya girdiğiniz doğrudan görsel bağlantısı (PNG/GIF/WebP) profilinizde afiş olarak gösterilir ve diğer YagmurMelek kullanıcılarına aktarılır.
-                </Forms.FormText>
-
-                {bannerUrl && (
-                    <div className={Margins.top8}>
-                        <img src={bannerUrl} alt="Afiş Önizleme" className="ym-nitro-banner-preview" />
-                    </div>
-                )}
+                {/* 4. TÜMÜNÜ SABİTLE BUTONU */}
+                <Button
+                    color={Button.Colors.GREEN}
+                    size={Button.Sizes.LARGE}
+                    onClick={applyHardcodedStyles}
+                    style={{ width: "100%", fontWeight: "bold" }}
+                >
+                    🚀 Tüm Ayarları Discord Profiline Kesin Sabitle (Hardcode Uygula)
+                </Button>
             </div>
         </section>
     );
@@ -315,7 +512,7 @@ export default definePlugin({
                 }
             ]
         },
-        // 7. UserProfileStore: Hook getUserProfile to persist and return custom colors, banner, effect, deco
+        // 7. UserProfileStore: Hook getUserProfile to persist and return custom colors, banner, effect, deco, display name styles
         {
             find: "UserProfileStore",
             replacement: {
@@ -340,8 +537,24 @@ export default definePlugin({
                     replace: "$self.handleAccountDisplayNameStyles($1);"
                 }
             ]
+        },
+        // 9. Banner Image loader hook: directly inject custom banner URL
+        {
+            find: ':"SHOULD_LOAD");',
+            replacement: {
+                match: /\i(?:\?)?.getPreviewBanner\(\i,\i,\i\)(?=.{0,100}"COMPLETE")/,
+                replace: "$self.patchBannerUrl(arguments[0])||$&"
+            }
         }
     ],
+
+    patchBannerUrl({ displayProfile }: any) {
+        if (!displayProfile) return null;
+        if (this.isCurrentUser(displayProfile.userId)) {
+            return settings.store.customBanner || null;
+        }
+        return this.getCustomBanner(displayProfile.userId);
+    },
 
     isCurrentUser(userOrId?: any): boolean {
         if (!userOrId) return true;
@@ -390,7 +603,7 @@ export default definePlugin({
         }
     },
 
-    onSetTryItOutBanner(banner: any) {
+    async onSetTryItOutBanner(banner: any) {
         try {
             if (banner) {
                 let bannerUri: string | null = null;
@@ -399,18 +612,36 @@ export default definePlugin({
                 } else if (typeof banner === "string") {
                     bannerUri = banner;
                 }
+
+                // If blob URL, convert to Base64 Data URL so it doesn't expire
+                if (bannerUri && bannerUri.startsWith("blob:")) {
+                    try {
+                        const blobRes = await fetch(bannerUri);
+                        const blob = await blobRes.blob();
+                        const reader = new FileReader();
+                        bannerUri = await new Promise<string>((resolve) => {
+                            reader.onloadend = () => resolve(reader.result as string);
+                            reader.readAsDataURL(blob);
+                        });
+                    } catch (e) {
+                        console.error("[YagmurMelekNitroEffects] blob conversion error:", e);
+                    }
+                }
+
                 if (bannerUri) {
                     settings.store.customBanner = bannerUri;
+                    const currentUser = UserStore.getCurrentUser();
+                    if (currentUser) {
+                        const profile = UserProfileStore.getUserProfile(currentUser.id);
+                        if (profile) profile.banner = bannerUri;
+                    }
+                    this.updateDynamicStyles();
+                    UserProfileStore.emitChange?.();
                 }
+
                 FluxDispatcher.dispatch({
                     type: "USER_PROFILE_SETTINGS_SET_PENDING_CHANGES",
                     pendingBanner: banner
-                });
-            } else if (banner === null) {
-                settings.store.customBanner = "";
-                FluxDispatcher.dispatch({
-                    type: "USER_PROFILE_SETTINGS_SET_PENDING_CHANGES",
-                    pendingBanner: null
                 });
             }
         } catch (err) {
@@ -468,23 +699,10 @@ export default definePlugin({
         try {
             if (styles) {
                 settings.store.displayNameStyles = JSON.stringify(styles);
-                const current = UserStore.getCurrentUser();
-                if (current) {
-                    current.displayNameStyles = styles;
-                }
+                this.applyDisplayNameStylesGlobally(styles);
                 FluxDispatcher.dispatch({
                     type: "USER_PROFILE_SETTINGS_SET_PENDING_CHANGES",
                     pendingDisplayNameStyles: styles
-                });
-            } else if (styles === null) {
-                settings.store.displayNameStyles = "";
-                const current = UserStore.getCurrentUser();
-                if (current) {
-                    current.displayNameStyles = null;
-                }
-                FluxDispatcher.dispatch({
-                    type: "USER_PROFILE_SETTINGS_SET_PENDING_CHANGES",
-                    pendingDisplayNameStyles: null
                 });
             }
         } catch (err) {
@@ -496,10 +714,7 @@ export default definePlugin({
         if (!userId || this.isCurrentUser(userId)) {
             const banner = settings.store.customBanner;
             if (banner) {
-                if (banner.startsWith("http://") || banner.startsWith("https://") || banner.startsWith("data:")) {
-                    return banner;
-                }
-                return `https://cdn.discordapp.com/banners/${userId || UserStore.getCurrentUser()?.id}/${banner}.png?size=1024`;
+                return banner;
             }
             return null;
         }
@@ -519,12 +734,16 @@ export default definePlugin({
             const decoded = decode3y3(bio);
             if (decoded) {
                 if (decoded.colors) dp.themeColors = decoded.colors;
-                if (decoded.banner) dp.banner = decoded.banner;
+                if (decoded.banner) {
+                    dp.banner = decoded.banner;
+                    dp.hasBanner = true;
+                }
             }
 
             if (this.isCurrentUser(dp?.userId)) {
                 if (settings.store.customBanner) {
                     dp.banner = settings.store.customBanner;
+                    dp.hasBanner = true;
                 }
                 if (settings.store.profileEffectId) {
                     dp.profileEffect = {
@@ -563,6 +782,10 @@ export default definePlugin({
                 const banner = settings.store.customBanner;
                 const effect = settings.store.profileEffectId;
                 const deco = settings.store.avatarDecorationSkuId;
+                let styles: any = null;
+                if (settings.store.displayNameStyles) {
+                    try { styles = JSON.parse(settings.store.displayNameStyles); } catch { }
+                }
 
                 const overrides: any = {
                     premiumType: 2
@@ -572,12 +795,24 @@ export default definePlugin({
                 }
                 if (banner) {
                     overrides.banner = banner;
+                    overrides.hasBanner = true;
                 }
                 if (effect) {
                     overrides.profileEffect = { id: effect, skuId: effect };
                 }
                 if (deco) {
                     overrides.avatarDecoration = { skuId: deco };
+                }
+                if (styles) {
+                    overrides.displayNameStyles = styles;
+                }
+                if (profile.user) {
+                    overrides.user = virtualMerge(profile.user, {
+                        premiumType: 2,
+                        displayNameStyles: styles,
+                        avatarDecoration: deco ? { skuId: deco } : profile.user.avatarDecoration,
+                        banner: banner || profile.user.banner
+                    });
                 }
 
                 return virtualMerge(profile, overrides);
@@ -593,6 +828,7 @@ export default definePlugin({
                     }
                     if (decoded.banner && !profile.banner) {
                         overrides.banner = decoded.banner;
+                        overrides.hasBanner = true;
                     }
                     return virtualMerge(profile, overrides);
                 }
@@ -602,31 +838,45 @@ export default definePlugin({
         return profile;
     },
 
+    userHook(user: any) {
+        if (!user) return user;
+        try {
+            if (this.isCurrentUser(user.id)) {
+                let styles: any = null;
+                if (settings.store.displayNameStyles) {
+                    try { styles = JSON.parse(settings.store.displayNameStyles); } catch { }
+                }
+                const deco = settings.store.avatarDecorationSkuId;
+                const banner = settings.store.customBanner;
+
+                user.premiumType = 2;
+                if (styles) user.displayNameStyles = styles;
+                if (deco) user.avatarDecoration = { skuId: deco };
+                if (banner) {
+                    user.banner = banner;
+                    user.hasBanner = true;
+                }
+            }
+        } catch { }
+        return user;
+    },
+
     handleAccountDecoration(deco: any) {
         try {
             if (deco) {
                 const sku = typeof deco === "object" ? (deco.skuId || deco.id) : deco;
                 if (sku) settings.store.avatarDecorationSkuId = String(sku);
-            } else if (deco === null) {
-                settings.store.avatarDecorationSkuId = "";
             }
         } catch { }
     },
 
-    handleAccountNameplate(_nameplate: any) {
-        // Can be stored if needed
-    },
+    handleAccountNameplate(_nameplate: any) { },
 
     handleAccountDisplayNameStyles(styles: any) {
         try {
             if (styles) {
                 settings.store.displayNameStyles = JSON.stringify(styles);
-                const current = UserStore.getCurrentUser();
-                if (current) current.displayNameStyles = styles;
-            } else if (styles === null) {
-                settings.store.displayNameStyles = "";
-                const current = UserStore.getCurrentUser();
-                if (current) current.displayNameStyles = null;
+                this.applyDisplayNameStylesGlobally(styles);
             }
         } catch { }
     },
@@ -635,62 +885,43 @@ export default definePlugin({
         try {
             if (action?.guildId) return;
 
-            if (action.pendingThemeColors !== undefined) {
+            if (action.pendingThemeColors !== undefined && action.pendingThemeColors !== null) {
                 if (Array.isArray(action.pendingThemeColors) && action.pendingThemeColors[0] != null && action.pendingThemeColors[1] != null) {
                     settings.store.primaryColor = action.pendingThemeColors[0];
                     settings.store.accentColor = action.pendingThemeColors[1];
-                } else if (action.pendingThemeColors === null) {
-                    settings.store.primaryColor = 0;
-                    settings.store.accentColor = 0;
                 }
             }
 
-            if (action.pendingBanner !== undefined) {
-                if (action.pendingBanner) {
-                    let bannerUri: string | null = null;
-                    if (typeof action.pendingBanner === "object") {
-                        bannerUri = action.pendingBanner.imageUri || action.pendingBanner.url || action.pendingBanner.asset || action.pendingBanner.id || action.pendingBanner.src || null;
-                    } else if (typeof action.pendingBanner === "string") {
-                        bannerUri = action.pendingBanner;
-                    }
-                    if (bannerUri) settings.store.customBanner = bannerUri;
-                } else if (action.pendingBanner === null) {
-                    settings.store.customBanner = "";
+            if (action.pendingBanner !== undefined && action.pendingBanner !== null) {
+                let bannerUri: string | null = null;
+                if (typeof action.pendingBanner === "object") {
+                    bannerUri = action.pendingBanner.imageUri || action.pendingBanner.url || action.pendingBanner.asset || action.pendingBanner.id || action.pendingBanner.src || null;
+                } else if (typeof action.pendingBanner === "string") {
+                    bannerUri = action.pendingBanner;
+                }
+                if (bannerUri) {
+                    settings.store.customBanner = bannerUri;
+                    this.updateDynamicStyles();
                 }
             }
 
-            if (action.pendingProfileEffect !== undefined) {
-                if (action.pendingProfileEffect) {
-                    const id = typeof action.pendingProfileEffect === "object"
-                        ? (action.pendingProfileEffect.id || action.pendingProfileEffect.skuId)
-                        : action.pendingProfileEffect;
-                    if (id) settings.store.profileEffectId = String(id);
-                } else if (action.pendingProfileEffect === null) {
-                    settings.store.profileEffectId = "";
-                }
+            if (action.pendingProfileEffect !== undefined && action.pendingProfileEffect !== null) {
+                const id = typeof action.pendingProfileEffect === "object"
+                    ? (action.pendingProfileEffect.id || action.pendingProfileEffect.skuId)
+                    : action.pendingProfileEffect;
+                if (id) settings.store.profileEffectId = String(id);
             }
 
-            if (action.pendingAvatarDecoration !== undefined) {
-                if (action.pendingAvatarDecoration) {
-                    const sku = typeof action.pendingAvatarDecoration === "object"
-                        ? (action.pendingAvatarDecoration.skuId || action.pendingAvatarDecoration.id)
-                        : action.pendingAvatarDecoration;
-                    if (sku) settings.store.avatarDecorationSkuId = String(sku);
-                } else if (action.pendingAvatarDecoration === null) {
-                    settings.store.avatarDecorationSkuId = "";
-                }
+            if (action.pendingAvatarDecoration !== undefined && action.pendingAvatarDecoration !== null) {
+                const sku = typeof action.pendingAvatarDecoration === "object"
+                    ? (action.pendingAvatarDecoration.skuId || action.pendingAvatarDecoration.id)
+                    : action.pendingAvatarDecoration;
+                if (sku) settings.store.avatarDecorationSkuId = String(sku);
             }
 
-            if (action.pendingDisplayNameStyles !== undefined) {
-                if (action.pendingDisplayNameStyles) {
-                    settings.store.displayNameStyles = JSON.stringify(action.pendingDisplayNameStyles);
-                    const current = UserStore.getCurrentUser();
-                    if (current) current.displayNameStyles = action.pendingDisplayNameStyles;
-                } else if (action.pendingDisplayNameStyles === null) {
-                    settings.store.displayNameStyles = "";
-                    const current = UserStore.getCurrentUser();
-                    if (current) current.displayNameStyles = null;
-                }
+            if (action.pendingDisplayNameStyles !== undefined && action.pendingDisplayNameStyles !== null) {
+                settings.store.displayNameStyles = JSON.stringify(action.pendingDisplayNameStyles);
+                this.applyDisplayNameStylesGlobally(action.pendingDisplayNameStyles);
             }
         } catch (err) {
             console.error("[YagmurMelekNitroEffects] onSetPendingChanges error:", err);
@@ -730,6 +961,7 @@ export default definePlugin({
                 }
             }
 
+            this.updateDynamicStyles();
             UserProfileStore.emitChange?.();
             UserStore.emitChange?.();
         } catch (err) {
@@ -765,24 +997,20 @@ export default definePlugin({
             } catch { }
 
             // 1. Process Banner
-            if (e.banner !== undefined) {
-                if (e.banner) {
-                    let bannerUri: string | null = null;
-                    if (typeof e.banner === "object") {
-                        bannerUri = e.banner.imageUri || e.banner.url || e.banner.asset || e.banner.id || e.banner.src || null;
-                    } else if (typeof e.banner === "string") {
-                        bannerUri = e.banner;
-                    }
-                    if (bannerUri) {
-                        settings.store.customBanner = bannerUri;
-                        currentBanner = bannerUri;
-                    }
-                } else if (e.banner === null) {
-                    settings.store.customBanner = "";
-                    currentBanner = "";
+            if (e.banner !== undefined && e.banner !== null) {
+                let bannerUri: string | null = null;
+                if (typeof e.banner === "object") {
+                    bannerUri = e.banner.imageUri || e.banner.url || e.banner.asset || e.banner.id || e.banner.src || null;
+                } else if (typeof e.banner === "string") {
+                    bannerUri = e.banner;
                 }
-                delete e.banner;
+                if (bannerUri) {
+                    settings.store.customBanner = bannerUri;
+                    currentBanner = bannerUri;
+                }
             }
+            // Strip from Discord save request to prevent Discord rejection
+            delete e.banner;
 
             // 2. Theme colors -> Auto 3y3 encoding into bio (with custom banner sync)
             if (e.theme_colors !== undefined) {
@@ -815,40 +1043,36 @@ export default definePlugin({
             }
 
             // 3. Profile effect
-            if (e.profile_effect_id !== undefined) {
-                if (e.profile_effect_id) {
-                    settings.store.profileEffectId = String(e.profile_effect_id);
-                } else {
-                    settings.store.profileEffectId = "";
-                }
-                delete e.profile_effect_id;
+            if (e.profile_effect_id !== undefined && e.profile_effect_id !== null) {
+                settings.store.profileEffectId = String(e.profile_effect_id);
             }
+            delete e.profile_effect_id;
 
             // 4. Avatar decoration
-            if (e.avatar_decoration_sku_id !== undefined) {
-                if (e.avatar_decoration_sku_id) {
-                    const sku = typeof e.avatar_decoration_sku_id === "object"
-                        ? (e.avatar_decoration_sku_id.skuId || e.avatar_decoration_sku_id.id)
-                        : e.avatar_decoration_sku_id;
-                    settings.store.avatarDecorationSkuId = String(sku);
-                } else {
-                    settings.store.avatarDecorationSkuId = "";
-                }
-                delete e.avatar_decoration_sku_id;
+            if (e.avatar_decoration_sku_id !== undefined && e.avatar_decoration_sku_id !== null) {
+                const sku = typeof e.avatar_decoration_sku_id === "object"
+                    ? (e.avatar_decoration_sku_id.skuId || e.avatar_decoration_sku_id.id)
+                    : e.avatar_decoration_sku_id;
+                if (sku) settings.store.avatarDecorationSkuId = String(sku);
             }
+            delete e.avatar_decoration_sku_id;
 
             // 5. Display name styles (prevent Discord 400 Bad Request on saving)
-            if (e.display_name_styles !== undefined) {
+            if (e.display_name_styles !== undefined && e.display_name_styles !== null) {
                 settings.store.displayNameStyles = JSON.stringify(e.display_name_styles);
+                this.applyDisplayNameStylesGlobally(e.display_name_styles);
                 delete e.display_name_styles;
             }
-            if (e.displayNameStyles !== undefined) {
+            if (e.displayNameStyles !== undefined && e.displayNameStyles !== null) {
                 settings.store.displayNameStyles = JSON.stringify(e.displayNameStyles);
+                this.applyDisplayNameStylesGlobally(e.displayNameStyles);
                 delete e.displayNameStyles;
             }
             delete e.display_name_font_id;
             delete e.display_name_effect_id;
             delete e.display_name_colors;
+
+            this.updateDynamicStyles();
         } catch (err) {
             console.error("[YagmurMelekNitroEffects] handleProfileSave error:", err);
         }
@@ -929,9 +1153,7 @@ export default definePlugin({
             const rawStyles = tryItOut.tryItOutDisplayNameStyles || pending.pendingDisplayNameStyles;
             if (rawStyles) {
                 settings.store.displayNameStyles = JSON.stringify(rawStyles);
-                if (currentUser) {
-                    currentUser.displayNameStyles = rawStyles;
-                }
+                this.applyDisplayNameStylesGlobally(rawStyles);
             }
 
             // 2. Encode to 3y3 bio tag
@@ -963,10 +1185,14 @@ export default definePlugin({
                 }
                 if (bannerUrl) {
                     profile.banner = bannerUrl;
+                    profile.hasBanner = true;
                 }
             }
 
-            // 5. Close try-it-out preview notice & pending changes
+            // 5. Update dynamic styles
+            this.updateDynamicStyles();
+
+            // 6. Close try-it-out preview notice & pending changes
             FluxDispatcher.dispatch({ type: "USER_PROFILE_SETTINGS_RESET_TRY_IT_OUT_CHANGES" });
             FluxDispatcher.dispatch({ type: "USER_PROFILE_SETTINGS_RESET_PENDING_CHANGES" });
 
@@ -979,12 +1205,174 @@ export default definePlugin({
 
     modalObserver: null as MutationObserver | null,
 
+    extractStyleFromModal(dialog: HTMLElement): any {
+        try {
+            // A. Inspect React Fiber on dialog and elements
+            const elementsToInspect = [
+                dialog,
+                dialog.querySelector('[class*="preview"]'),
+                dialog.querySelector('[class*="card_"]'),
+                dialog.querySelector('[class*="footer_"]'),
+                ...Array.from(dialog.querySelectorAll("button"))
+            ].filter(Boolean) as HTMLElement[];
+
+            for (const el of elementsToInspect) {
+                const fiberKey = Object.keys(el).find(k => k.startsWith("__reactFiber$") || k.startsWith("__reactInternalInstance$"));
+                if (!fiberKey) continue;
+                let fiber = (el as any)[fiberKey];
+                let depth = 0;
+                while (fiber && depth < 25) {
+                    depth++;
+                    const props = fiber.memoizedProps;
+                    if (props) {
+                        if (props.displayNameStyles && props.displayNameStyles.fontId !== undefined) {
+                            return props.displayNameStyles;
+                        }
+                        if (props.fontId !== undefined && props.effectId !== undefined) {
+                            return {
+                                fontId: props.fontId,
+                                effectId: props.effectId,
+                                colors: Array.isArray(props.colors) ? props.colors : [0xd042f5]
+                            };
+                        }
+                    }
+                    let hook = fiber.memoizedState;
+                    while (hook) {
+                        const s = hook.memoizedState;
+                        if (s && typeof s === "object") {
+                            if (s.fontId !== undefined && s.effectId !== undefined) {
+                                return s;
+                            }
+                        }
+                        hook = hook.next;
+                    }
+                    fiber = fiber.return;
+                }
+            }
+
+            // B. Fallback: Parse directly from DOM visual selections!
+            // 1. Font index
+            const fontButtons = Array.from(dialog.querySelectorAll<HTMLElement>("button, [role=\"button\"]")).filter(b => {
+                const text = b.innerText?.trim();
+                return text === "Gg" || text === "G" || text === "qg";
+            });
+            let chosenFontId = 1;
+            fontButtons.forEach((btn, idx) => {
+                const html = btn.outerHTML;
+                const style = window.getComputedStyle(btn);
+                if (html.includes("selected") || html.includes("active") || btn.getAttribute("aria-checked") === "true" || style.borderColor.includes("rgb(88, 101, 242)") || style.borderColor.includes("rgb(255,") || btn.querySelector('[class*="indicator"], [class*="selected"], [class*="dot"]')) {
+                    chosenFontId = idx + 1;
+                }
+            });
+
+            // 2. Effect index
+            const effectNames = ["Sabit", "Gradyan", "Neon", "Çizgi Film", "Pop", "Şekercik", "Prizma"];
+            const effectNamesEn = ["Static", "Gradient", "Neon", "Comic", "Pop", "Candy", "Prism"];
+            let chosenEffectId = 3; // Default to Neon
+            for (let i = 0; i < effectNames.length; i++) {
+                const trName = effectNames[i];
+                const enName = effectNamesEn[i];
+                const btn = Array.from(dialog.querySelectorAll<HTMLElement>("button, [role=\"button\"]")).find(b => {
+                    const t = b.innerText?.trim();
+                    return t === trName || t === enName;
+                });
+                if (btn) {
+                    const html = btn.outerHTML;
+                    const style = window.getComputedStyle(btn);
+                    if (html.includes("selected") || html.includes("active") || btn.getAttribute("aria-checked") === "true" || (style.borderColor !== "transparent" && !style.borderColor.includes("rgba(0, 0, 0, 0)"))) {
+                        chosenEffectId = i + 1;
+                    }
+                }
+            }
+
+            // 3. Color: Look for color circle with checkmark SVG
+            let chosenColors = [0xd042f5]; // default purple
+            const colorButtons = Array.from(dialog.querySelectorAll<HTMLElement>('[role="button"], button')).filter(b => {
+                return b.querySelector("svg") && (b.style.backgroundColor || b.getAttribute("style")?.includes("background"));
+            });
+            for (const btn of colorButtons) {
+                if (btn.querySelector('svg path[d*="M"], svg [d*="m"], [class*="check"]')) {
+                    const bg = btn.style.backgroundColor;
+                    const match = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+                    if (match) {
+                        const r = parseInt(match[1], 10);
+                        const g = parseInt(match[2], 10);
+                        const b = parseInt(match[3], 10);
+                        const intCol = (r << 16) | (g << 8) | b;
+                        chosenColors = [intCol];
+                    }
+                }
+            }
+
+            return {
+                fontId: chosenFontId,
+                effectId: chosenEffectId,
+                colors: chosenColors
+            };
+        } catch (e) {
+            console.error("[YagmurMelekNitroEffects] extractStyleFromModal error:", e);
+            return {
+                fontId: 1,
+                effectId: 3,
+                colors: [0xd042f5]
+            };
+        }
+    },
+
+    applyDisplayNameStylesGlobally(style: any) {
+        if (!style) return;
+        try {
+            const current = UserStore.getCurrentUser();
+            if (current) {
+                current.displayNameStyles = style;
+                current.premiumType = 2;
+            }
+
+            if (current) {
+                const profile = UserProfileStore.getUserProfile(current.id);
+                if (profile) {
+                    profile.displayNameStyles = style;
+                    profile.premiumType = 2;
+                    if (profile.user) {
+                        profile.user.displayNameStyles = style;
+                        profile.user.premiumType = 2;
+                    }
+                }
+            }
+
+            this.updateDynamicStyles();
+
+            FluxDispatcher.dispatch({
+                type: "USER_PROFILE_SETTINGS_SET_PENDING_CHANGES",
+                pendingDisplayNameStyles: style
+            });
+            FluxDispatcher.dispatch({
+                type: "CURRENT_USER_UPDATE",
+                user: current
+            });
+            UserProfileStore.emitChange?.();
+            UserStore.emitChange?.();
+        } catch (err) {
+            console.error("[YagmurMelekNitroEffects] applyDisplayNameStylesGlobally error:", err);
+        }
+    },
+
     saveAndApplyDisplayNameStyle(picked?: any) {
         try {
             const currentUser = UserStore.getCurrentUser();
             if (!currentUser) return;
 
             let style = picked;
+
+            // 1. Try to extract style directly from the open modal
+            if (!style) {
+                const dialog = document.querySelector<HTMLElement>('[role="dialog"], [class*="modal_"]');
+                if (dialog) {
+                    style = this.extractStyleFromModal(dialog);
+                }
+            }
+
+            // 2. Try UserProfileSettingsStore
             if (!style) {
                 try {
                     const store = ((window as any).Vencord?.Webpack?.findStore?.("UserProfileSettingsStore")
@@ -995,20 +1383,23 @@ export default definePlugin({
                 } catch { }
             }
 
+            // 3. Fallback to settings.store or default Neon Purple
             if (!style && settings.store.displayNameStyles) {
                 try {
                     style = JSON.parse(settings.store.displayNameStyles);
                 } catch { }
             }
 
-            if (style) {
-                settings.store.displayNameStyles = JSON.stringify(style);
-                currentUser.displayNameStyles = style;
-                FluxDispatcher.dispatch({
-                    type: "USER_PROFILE_SETTINGS_SET_PENDING_CHANGES",
-                    pendingDisplayNameStyles: style
-                });
+            if (!style) {
+                style = {
+                    fontId: 1,
+                    effectId: 3, // Neon
+                    colors: [0xd042f5] // Purple
+                };
             }
+
+            settings.store.displayNameStyles = JSON.stringify(style);
+            this.applyDisplayNameStylesGlobally(style);
 
             try {
                 closeModal("display-name-styles-modal");
@@ -1021,10 +1412,105 @@ export default definePlugin({
                 }
             }, 60);
 
-            showToast("✨ YagmurDiscord: Görünen ad stiliniz nitrosuz olarak başarıyla uygulandı!", Toasts.Type.SUCCESS);
+            showToast("✨ YagmurDiscord: Görünen ad stiliniz nitrosuz olarak başarıyla uygulandı ve sabitlendi!", Toasts.Type.SUCCESS);
         } catch (err) {
             console.error("[YagmurMelekNitroEffects] saveAndApplyDisplayNameStyle error:", err);
             showToast("Görünen ad stili kaydedilirken bir hata oluştu.", Toasts.Type.FAILURE);
+        }
+    },
+
+    updateDynamicStyles() {
+        try {
+            const currentUser = UserStore.getCurrentUser();
+            if (!currentUser) return;
+            const currentId = currentUser.id;
+
+            let styleEl = document.getElementById("ym-nitro-dynamic-styles") as HTMLStyleElement;
+            if (!styleEl) {
+                styleEl = document.createElement("style");
+                styleEl.id = "ym-nitro-dynamic-styles";
+                document.head.appendChild(styleEl);
+            }
+
+            let css = "";
+
+            // 1. Banner style
+            const banner = settings.store.customBanner;
+            if (banner) {
+                css += `
+[data-user-id="${currentId}"] [class*="banner_"]:not([class*="settings_"]),
+[class*="userProfile_"] [data-user-id="${currentId}"] [class*="banner_"],
+[class*="userPopout_"] [class*="banner_"]:not([class*="settings_"]) {
+    background-image: url("${banner}") !important;
+    background-size: cover !important;
+    background-position: center !important;
+    min-height: 120px !important;
+}
+`;
+            }
+
+            // 2. Display Name Styles
+            let styles: any = null;
+            if (settings.store.displayNameStyles) {
+                try { styles = JSON.parse(settings.store.displayNameStyles); } catch { }
+            }
+            if (styles) {
+                const colorHex = styles.colors?.[0] ? "#" + styles.colors[0].toString(16).padStart(6, "0") : "#d042f5";
+                const effectId = styles.effectId ?? 3;
+
+                if (effectId === 3) { // Neon
+                    css += `
+[data-user-id="${currentId}"] [class*="username_"],
+[data-user-id="${currentId}"] [class*="userTag"] [class*="name_"],
+[class*="userPopout_"] [class*="nickname_"],
+[class*="userProfile_"] [class*="nickname_"] {
+    color: #ffffff !important;
+    text-shadow: 0 0 4px ${colorHex}, 0 0 10px ${colorHex}, 0 0 18px ${colorHex}, 0 0 30px ${colorHex} !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.5px !important;
+}
+`;
+                } else if (effectId === 2) { // Gradyan
+                    const color2 = styles.colors?.[1] ? "#" + styles.colors[1].toString(16).padStart(6, "0") : "#ffffff";
+                    css += `
+[data-user-id="${currentId}"] [class*="username_"],
+[data-user-id="${currentId}"] [class*="userTag"] [class*="name_"],
+[class*="userPopout_"] [class*="nickname_"],
+[class*="userProfile_"] [class*="nickname_"] {
+    background: linear-gradient(90deg, ${colorHex}, ${color2}) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    font-weight: 700 !important;
+}
+`;
+                } else if (effectId === 7) { // Prizma
+                    css += `
+[data-user-id="${currentId}"] [class*="username_"],
+[data-user-id="${currentId}"] [class*="userTag"] [class*="name_"],
+[class*="userPopout_"] [class*="nickname_"],
+[class*="userProfile_"] [class*="nickname_"] {
+    background: linear-gradient(90deg, #ff0055, #ffaa00, #33cc33, #0099ff, #cc00ff) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    font-weight: 700 !important;
+}
+`;
+                } else { // Static
+                    css += `
+[data-user-id="${currentId}"] [class*="username_"],
+[data-user-id="${currentId}"] [class*="userTag"] [class*="name_"],
+[class*="userPopout_"] [class*="nickname_"],
+[class*="userProfile_"] [class*="nickname_"] {
+    color: ${colorHex} !important;
+    font-weight: 700 !important;
+}
+`;
+                }
+            }
+
+            styleEl.textContent = css;
+        } catch (e) {
+            console.error("[YagmurMelekNitroEffects] updateDynamicStyles error:", e);
         }
     },
 
@@ -1047,7 +1533,7 @@ export default definePlugin({
                         btn.type = "button";
                         btn.className = "ym-nitro-style-apply-btn";
                         btn.innerHTML = "✨ Nitrosuz Kullan";
-                        btn.title = "Seçilen yazı tipi, efekt ve renkleri Nitrosuz olarak uygula";
+                        btn.title = "Seçilen yazı tipi, efekt ve renkleri Nitrosuz olarak uygula ve sabitle";
                         btn.onclick = (e) => {
                             e.preventDefault();
                             e.stopPropagation();
@@ -1072,6 +1558,8 @@ export default definePlugin({
     },
 
     fluxListener: null as ((action: any) => void) | null,
+    origGetCurrentUser: null as any,
+    origGetUser: null as any,
 
     start() {
         try {
@@ -1080,10 +1568,32 @@ export default definePlugin({
                 const current = UserStore.getCurrentUser();
                 if (current && styles) {
                     current.displayNameStyles = styles;
+                    current.premiumType = 2;
                 }
             }
         } catch { }
 
+        // Runtime UserStore wrapping so that all Discord components receive premiumType: 2 and styles
+        try {
+            if (UserStore && !this.origGetCurrentUser) {
+                this.origGetCurrentUser = UserStore.getCurrentUser.bind(UserStore);
+                UserStore.getCurrentUser = () => {
+                    const u = this.origGetCurrentUser();
+                    return this.userHook(u);
+                };
+            }
+            if (UserStore && !this.origGetUser) {
+                this.origGetUser = UserStore.getUser.bind(UserStore);
+                UserStore.getUser = (id: string) => {
+                    const u = this.origGetUser(id);
+                    return this.userHook(u);
+                };
+            }
+        } catch (e) {
+            console.error("[YagmurMelekNitroEffects] UserStore wrap error:", e);
+        }
+
+        this.updateDynamicStyles();
         this.setupModalButtonInjector();
 
         this.fluxListener = (action: any) => {
@@ -1121,8 +1631,14 @@ export default definePlugin({
                             if (settings.store.avatarDecorationSkuId) {
                                 current.avatarDecoration = { skuId: settings.store.avatarDecorationSkuId };
                             }
+                            if (settings.store.customBanner) {
+                                current.banner = settings.store.customBanner;
+                                current.hasBanner = true;
+                            }
+                            current.premiumType = 2;
                         }
                     } catch { }
+                    this.updateDynamicStyles();
                     break;
             }
         };
@@ -1145,6 +1661,17 @@ export default definePlugin({
             this.modalObserver = null;
         }
         document.querySelector("#ym-nitrosuz-kullan-btn")?.remove();
+        document.getElementById("ym-nitro-dynamic-styles")?.remove();
+
+        if (this.origGetCurrentUser && UserStore) {
+            UserStore.getCurrentUser = this.origGetCurrentUser;
+            this.origGetCurrentUser = null;
+        }
+        if (this.origGetUser && UserStore) {
+            UserStore.getUser = this.origGetUser;
+            this.origGetUser = null;
+        }
+
         if (this.fluxListener) {
             FluxDispatcher.unsubscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_BANNER", this.fluxListener);
             FluxDispatcher.unsubscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_THEME_COLORS", this.fluxListener);

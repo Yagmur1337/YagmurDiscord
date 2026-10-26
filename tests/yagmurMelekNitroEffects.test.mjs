@@ -93,4 +93,14 @@ test("Patch 8 strips restricted fields from Account Save payload in module 63167
     assert.ok(replaced.includes('$self.handleAccountDisplayNameStyles(N);'));
 });
 
+test("Patch 9 matches SHOULD_LOAD banner hook and intercepts getPreviewBanner", () => {
+    const bannerHookCode = 'let s=p?.getPreviewBanner(v,m,g);return(0,r.jsx)(o.A,{bannerSrc:s,status:y?"SHOULD_LOAD":"COMPLETE"})';
+    const rBanner = /\i(?:\?)?.getPreviewBanner\(\i,\i,\i\)(?=.{0,100}"COMPLETE")/;
+    const canonRBanner = new RegExp(rBanner.source.replaceAll('\\i', '(?:[A-Za-z_$][\\w$]*)'));
+
+    assert.ok(canonRBanner.test(bannerHookCode), "Must match getPreviewBanner call before COMPLETE status");
+    const replaced = bannerHookCode.replace(canonRBanner, '$self.patchBannerUrl(arguments[0])||$&');
+    assert.ok(replaced.includes('let s=$self.patchBannerUrl(arguments[0])||p?.getPreviewBanner(v,m,g);'));
+});
+
 
