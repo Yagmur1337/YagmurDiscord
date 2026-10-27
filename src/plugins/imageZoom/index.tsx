@@ -89,8 +89,8 @@ const imageContextMenuPatch: NavContextMenuPatchCallback = (children, props) => 
 
     const { square, nearestNeighbour } = settings.use(["square", "nearestNeighbour"]);
 
-    children.push(
-        <Menu.MenuGroup id="image-zoom">
+    const items = [
+        Menu.MenuCheckboxItem && (
             <Menu.MenuCheckboxItem
                 id="vc-square"
                 label={yagmurMelekTranslate("Square Lens")}
@@ -99,6 +99,8 @@ const imageContextMenuPatch: NavContextMenuPatchCallback = (children, props) => 
                     settings.store.square = !square;
                 }}
             />
+        ),
+        Menu.MenuCheckboxItem && (
             <Menu.MenuCheckboxItem
                 id="vc-nearest-neighbour"
                 label={yagmurMelekTranslate("Nearest Neighbour")}
@@ -107,6 +109,8 @@ const imageContextMenuPatch: NavContextMenuPatchCallback = (children, props) => 
                     settings.store.nearestNeighbour = !nearestNeighbour;
                 }}
             />
+        ),
+        Menu.MenuControlItem && Menu.MenuSliderControl && (
             <Menu.MenuControlItem
                 id="vc-zoom"
                 label={yagmurMelekTranslate("Zoom")}
@@ -121,6 +125,8 @@ const imageContextMenuPatch: NavContextMenuPatchCallback = (children, props) => 
                     />
                 )}
             />
+        ),
+        Menu.MenuControlItem && Menu.MenuSliderControl && (
             <Menu.MenuControlItem
                 id="vc-size"
                 label={yagmurMelekTranslate("Lens Size")}
@@ -135,6 +141,8 @@ const imageContextMenuPatch: NavContextMenuPatchCallback = (children, props) => 
                     />
                 )}
             />
+        ),
+        Menu.MenuControlItem && Menu.MenuSliderControl && (
             <Menu.MenuControlItem
                 id="vc-zoom-speed"
                 label={yagmurMelekTranslate("Zoom Speed")}
@@ -150,8 +158,16 @@ const imageContextMenuPatch: NavContextMenuPatchCallback = (children, props) => 
                     />
                 )}
             />
-        </Menu.MenuGroup>
-    );
+        )
+    ].filter(Boolean);
+
+    if (items.length > 0) {
+        if (Menu.MenuGroup) {
+            children.push(<Menu.MenuGroup id="image-zoom">{items}</Menu.MenuGroup>);
+        } else {
+            children.push(...items as any);
+        }
+    }
 };
 
 export default definePlugin({

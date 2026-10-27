@@ -66,7 +66,7 @@ export default definePlugin({
         },
         "image-context": (children, props) => {
             if (!settings.store.ocr) return;
-            const address = props.src || props.target?.src;
+            const address = props?.src || props?.target?.src;
             if (typeof address === "string") children.push(<Menu.MenuItem id="yagmurmelek-ocr" label="YagmurMelekDc · Görselden yazı al" action={() => openPanel(undefined, address)} />);
         }
     },
