@@ -69,7 +69,7 @@ interface SettingsLayoutBuilder {
 const settings = definePluginSettings({
     settingsLocation: {
         type: OptionType.SELECT,
-        description: yagmurMelekTranslate("Where to put the Vencord settings section"),
+        description: yagmurMelekTranslate("Yağmur Discord ayarları bölümünün konumu"),
         options: [
             { label: yagmurMelekTranslate("At the very top"), value: "top" },
             { label: yagmurMelekTranslate("Above the Nitro section"), value: "aboveNitro", default: true },
@@ -81,7 +81,7 @@ const settings = definePluginSettings({
     },
     includeVencordInfoWhenCopying: {
         type: OptionType.BOOLEAN,
-        description: yagmurMelekTranslate("Also copy Vencord info (Vencord, Electron, Chromium) when clicking the version info in the bottom left area of the Settings page"),
+        description: yagmurMelekTranslate("Ayarlar sayfasının sol altındaki sürüm bilgisine tıklandığında Yağmur Discord bilgilerini de kopyala"),
         default: true
     }
 });

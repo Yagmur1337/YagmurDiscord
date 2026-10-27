@@ -84,15 +84,15 @@ function Updater() {
 
             <div className="vc-settings-switches">
                 <FormSwitch
-                    title={yagmurMelekTranslate("Automatically update")}
-                    description={yagmurMelekTranslate("Automatically update Vencord without confirmation prompt")}
+                    title={yagmurMelekTranslate("Otomatik güncelle")}
+                    description={yagmurMelekTranslate("Onay istemeden Yağmur Discord'u otomatik olarak güncelle")}
                     value={settings.autoUpdate}
                     onChange={(v: boolean) => settings.autoUpdate = v}
                     hideBorder
                 />
                 <FormSwitch
-                    title={yagmurMelekTranslate("Get notified when an automatic update completes")}
-                    description={yagmurMelekTranslate("Show a notification when Vencord automatically updates")}
+                    title={yagmurMelekTranslate("Otomatik güncelleme tamamlandığında bildirim al")}
+                    description={yagmurMelekTranslate("Yağmur Discord otomatik olarak güncellendiğinde bir bildirim göster")}
                     value={settings.autoUpdateNotification}
                     onChange={(v: boolean) => settings.autoUpdateNotification = v}
                     disabled={!settings.autoUpdate}

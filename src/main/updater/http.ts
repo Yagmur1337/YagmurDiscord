@@ -17,6 +17,8 @@
 */
 
 import { fetchBuffer, fetchJson } from "@main/utils/http";
+import { newerVersion } from "@plugins/yagmurMelekUpdater/package";
+import { HYPER_VERSION } from "@plugins/yagmurMelekUpdater/version";
 import { IpcEvents } from "@shared/IpcEvents";
 import { VENCORD_USER_AGENT } from "@shared/vencordUserAgent";
 import { ipcMain } from "electron";
@@ -46,30 +48,50 @@ async function calculateGitChanges() {
     const isOutdated = await fetchUpdates();
     if (!isOutdated) return [];
 
-    const data = await githubGet(`/compare/${gitHash}...HEAD`);
+    try {
+        const data = await githubGet(`/compare/${gitHash}...HEAD`);
 
-    return data.commits.map((c: any) => ({
-        // github api only sends the long sha
-        hash: c.sha.slice(0, 7),
-        author: c.author?.login ?? c.commit?.author?.name ?? "Unknown Author",
-        message: c.commit.message.split("\n")[0]
-    }));
+        return data.commits?.map((c: any) => ({
+            // github api only sends the long sha
+            hash: c.sha.slice(0, 7),
+            author: c.author?.login ?? c.commit?.author?.name ?? "Unknown Author",
+            message: c.commit.message.split("\n")[0]
+        })) ?? [];
+    } catch {
+        return [{
+            hash: "update",
+            author: "Yağmur Discord",
+            message: "Yeni Yağmur Discord güncellemesi mevcut"
+        }];
+    }
 }
 
 async function fetchUpdates() {
-    const data = await githubGet("/releases/latest");
+    PendingUpdates = [];
+    try {
+        const data = await githubGet("/releases/latest");
+        if (!data || data.draft || data.prerelease)
+            return false;
 
-    const hash = data.name.slice(data.name.lastIndexOf(" ") + 1);
-    if (hash === gitHash)
-        return false;
-
-    data.assets.forEach(({ name, browser_download_url }) => {
-        if (VENCORD_FILES.some(s => name.startsWith(s))) {
-            PendingUpdates.push([name, browser_download_url]);
+        const releaseTag = String(data.tag_name ?? "").replace(/^v/i, "");
+        if (releaseTag && !newerVersion(releaseTag, HYPER_VERSION)) {
+            return false;
         }
-    });
 
-    return true;
+        const hash = data.name?.slice(data.name.lastIndexOf(" ") + 1);
+        if (hash === gitHash || data.name?.includes(gitHash) || (data.target_commitish && data.target_commitish.slice(0, 7) === gitHash))
+            return false;
+
+        data.assets?.forEach(({ name, browser_download_url }: { name: string; browser_download_url: string; }) => {
+            if (VENCORD_FILES.some(s => name.startsWith(s))) {
+                PendingUpdates.push([name, browser_download_url]);
+            }
+        });
+
+        return PendingUpdates.length > 0;
+    } catch {
+        return false;
+    }
 }
 
 async function applyUpdates() {

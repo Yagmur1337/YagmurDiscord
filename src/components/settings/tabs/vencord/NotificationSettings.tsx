@@ -18,7 +18,7 @@ export function NotificationSection() {
         <section className={Margins.top16}>
             <Forms.FormTitle tag="h5">{yagmurMelekTranslate("Notifications")}</Forms.FormTitle>
             <Forms.FormText className={Margins.bottom8}>
-                {yagmurMelekTranslate("Settings for Notifications sent by Vencord. This does NOT include Discord notifications (messages, etc)")}</Forms.FormText>
+                {yagmurMelekTranslate("Yağmur Discord tarafından gönderilen bildirimlerin ayarları. Discord mesaj bildirimlerini içermez.")}</Forms.FormText>
             <Flex>
                 <Button onClick={openNotificationSettingsModal}>
                     {yagmurMelekTranslate("Notification Settings")}</Button>
@@ -54,17 +54,17 @@ function NotificationSettings() {
                 </ErrorCard>
             )}
             <Forms.FormText className={Margins.bottom8}>
-                {yagmurMelekTranslate("Some plugins may show you notifications. These come in two styles:")}<ul>
-                    <li><strong>{yagmurMelekTranslate("Vencord Notifications")}</strong>{yagmurMelekTranslate(": These are in-app notifications")}</li>
-                    <li><strong>{yagmurMelekTranslate("Desktop Notifications")}</strong>{yagmurMelekTranslate(": Native Desktop notifications (like when you get a ping)")}</li>
+                {yagmurMelekTranslate("Bazı eklentiler bildirim gösterebilir. Bunlar iki biçimde sunulur:")}<ul>
+                    <li><strong>{yagmurMelekTranslate("Yağmur Discord Bildirimleri")}</strong>{yagmurMelekTranslate(": Uygulama içi bildirimlerdir")}</li>
+                    <li><strong>{yagmurMelekTranslate("Masaüstü Bildirimleri")}</strong>{yagmurMelekTranslate(": İşletim sistemi bildirimleridir")}</li>
                 </ul>
             </Forms.FormText>
             <Select
                 placeholder={yagmurMelekTranslate("Notification Style")}
                 options={[
-                    { label: yagmurMelekTranslate("Only use Desktop notifications when Discord is not focused"), value: "not-focused", default: true },
-                    { label: yagmurMelekTranslate("Always use Desktop notifications"), value: "always" },
-                    { label: yagmurMelekTranslate("Always use Vencord notifications"), value: "never" },
+                    { label: yagmurMelekTranslate("Yalnızca Discord odakta değilken masaüstü bildirimi kullan"), value: "not-focused", default: true },
+                    { label: yagmurMelekTranslate("Her zaman masaüstü bildirimi kullan"), value: "always" },
+                    { label: yagmurMelekTranslate("Her zaman Yağmur Discord bildirimlerini kullan"), value: "never" },
                 ] satisfies Array<{ value: typeof settings["useNative"]; } & Record<string, any>>}
                 closeOnSelect={true}
                 select={v => settings.useNative = v}

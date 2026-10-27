@@ -182,6 +182,18 @@ export default definePlugin({
 
     commands: [
         {
+            name: "yagmur-debug",
+            description: yagmurMelekTranslate("Yağmur Discord hata ayıklama bilgilerini gönder"),
+            predicate: ctx => isPluginDev(UserStore.getCurrentUser()?.id) || isSupportAllowedChannel(ctx.channel),
+            execute: async () => ({ content: await generateDebugInfoMessage() })
+        },
+        {
+            name: "yagmur-plugins",
+            description: yagmurMelekTranslate("Yağmur Discord eklenti listesini gönder"),
+            predicate: ctx => isPluginDev(UserStore.getCurrentUser()?.id) || isSupportAllowedChannel(ctx.channel),
+            execute: () => ({ content: generatePluginList() })
+        },
+        {
             name: "vencord-debug",
             description: yagmurMelekTranslate("Send Vencord debug info"),
             predicate: ctx => isPluginDev(UserStore.getCurrentUser()?.id) || isSupportAllowedChannel(ctx.channel),

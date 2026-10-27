@@ -82,8 +82,8 @@ async function syncSettings() {
             // there was an error to notify the user, but besides that we only want to show one notification instead of all
             // of the possible ones it has (such as when your settings are newer).
             showNotification({
-                title: "Cloud Settings",
-                body: "Your settings have been updated! Click here to restart to fully apply changes!",
+                title: "Bulut Ayarları",
+                body: "Ayarlarınız güncellendi! Değişiklikleri tam olarak uygulamak için buraya tıklayıp yeniden başlatın!",
                 color: "var(--green-360)",
                 onClick: relaunch
             });
@@ -126,8 +126,8 @@ async function runUpdateCheck() {
             await update();
             if (Settings.autoUpdateNotification) {
                 notify({
-                    title: "Vencord has been updated!",
-                    body: "Click here to restart",
+                    title: "Yağmur Discord Güncellendi! 🚀",
+                    body: "Değişiklikleri uygulamak için buraya tıklayıp yeniden başlatın.",
                     onClick: relaunch
                 });
             }
@@ -135,8 +135,8 @@ async function runUpdateCheck() {
         }
 
         notify({
-            title: "A Vencord update is available!",
-            body: "Click here to view the update",
+            title: "Yağmur Discord Güncellemesi Mevcut! 🚀",
+            body: "Güncellemeyi görüntülemek ve uygulamak için buraya tıklayın.",
             onClick: () => openSettingsTabModal(UpdaterTab!)
         });
     } catch (err) {

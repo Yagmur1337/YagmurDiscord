@@ -85,7 +85,7 @@ export function Updatable(props: CommonProps) {
                 </>
             ) : (
                 <Forms.FormText className={Margins.bottom8}>
-                    {isOutdated ? (updates.length === 1 ? "There is 1 Update" : `There are ${updates.length} Updates`) : yagmurMelekTranslate("Up to Date!")}
+                    {isOutdated ? (updates.length === 1 ? "1 Yeni Güncelleme Var" : `${updates.length} Yeni Güncelleme Var`) : yagmurMelekTranslate("Yağmur Discord Güncel! 🚀")}
                 </Forms.FormText>
             )}
 
@@ -103,10 +103,10 @@ export function Updatable(props: CommonProps) {
                                     openModal(props => (
                                         <ConfirmModal
                                             {...props}
-                                            title={yagmurMelekTranslate("Update Success!")}
-                                            subtitle={yagmurMelekTranslate("Successfully updated. Restart now to apply the changes?")}
-                                            confirmText="Restart"
-                                            cancelText="Not now!"
+                                            title={yagmurMelekTranslate("Güncelleme Başarılı!")}
+                                            subtitle={yagmurMelekTranslate("Yağmur Discord başarıyla güncellendi. Değişiklikleri uygulamak için şimdi yeniden başlatılsın mı?")}
+                                            confirmText="Yeniden Başlat"
+                                            cancelText="Daha Sonra"
                                             variant="primary"
                                             onConfirm={() => {
                                                 relaunch();
@@ -132,7 +132,7 @@ export function Updatable(props: CommonProps) {
                             setUpdates([]);
 
                             Toasts.show({
-                                message: "No updates found!",
+                                message: "Yağmur Discord güncel, yeni güncelleme bulunamadı!",
                                 id: Toasts.genId(),
                                 type: Toasts.Type.MESSAGE,
                                 options: {
