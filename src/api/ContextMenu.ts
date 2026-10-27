@@ -133,14 +133,10 @@ interface ContextMenuProps {
 export function _usePatchContextMenu(props: ContextMenuProps) {
     if (!Menu.MenuItem) return props; // Prevent crashes in case we fail to acquire menu items for some reason
 
-    try {
-        props = {
-            ...props,
-            children: cloneMenuChildren(props.children),
-        };
-    } catch (err) {
-        ContextMenuLogger.error("Failed to clone menu children:", err);
-    }
+    props = {
+        ...props,
+        children: cloneMenuChildren(props.children),
+    };
 
     props.contextMenuAPIArguments ??= [];
     const contextMenuPatches = navPatches.get(props.navId);
@@ -165,49 +161,22 @@ export function _usePatchContextMenu(props: ContextMenuProps) {
         }
     }
 
-    props.children = cleanMenuChildren(props.children);
     return props;
 }
 
-function cleanMenuChildren(obj: any): any {
-    if (obj == null) return null;
+function cloneMenuChildren(obj: ReactElement<any> | Array<ReactElement<any> | null> | null) {
     if (Array.isArray(obj)) {
-        return obj.map(cleanMenuChildren).filter(Boolean);
-    }
-    if (React.isValidElement(obj)) {
-        // Prevent Minified React Error #130: element type is invalid (expected string/class/function, got undefined)
-        if (!obj.type) return null;
-        if ((obj.props as any)?.children) {
-            const cleaned = cleanMenuChildren((obj.props as any).children);
-            try {
-                return React.cloneElement(obj, undefined, ...(Array.isArray(cleaned) ? cleaned : [cleaned]));
-            } catch {
-                return obj;
-            }
-        }
-    }
-    return obj;
-}
-
-function cloneMenuChildren(obj: ReactElement<any> | Array<ReactElement<any> | null> | null): any {
-    if (obj == null) return null;
-    if (Array.isArray(obj)) {
-        return obj.map(cloneMenuChildren).filter(Boolean);
+        return obj.map(cloneMenuChildren);
     }
 
     if (React.isValidElement(obj)) {
-        if (!obj.type) return null;
-        try {
-            obj = React.cloneElement(obj);
+        obj = React.cloneElement(obj);
 
-            if (
-                obj?.props?.children &&
-                (obj.type !== Menu.MenuControlItem || obj.type === Menu.MenuControlItem && obj.props.control != null)
-            ) {
-                obj.props.children = cloneMenuChildren(obj.props.children);
-            }
-        } catch {
-            return obj;
+        if (
+            obj?.props?.children &&
+            (obj.type !== Menu.MenuControlItem || obj.type === Menu.MenuControlItem && obj.props.control != null)
+        ) {
+            obj.props.children = cloneMenuChildren(obj.props.children);
         }
     }
 

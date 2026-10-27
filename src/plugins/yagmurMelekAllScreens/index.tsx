@@ -8,9 +8,7 @@ import "./style.css";
 
 import { ChatBarButton } from "@api/ChatButtons";
 import { definePluginSettings } from "@api/Settings";
-import ErrorBoundary from "@components/ErrorBoundary";
 import definePlugin, { OptionType } from "@utils/types";
-import { findComponentByCodeLazy } from "@webpack";
 import { closeModal, Menu, React } from "@webpack/common";
 
 import { hookDesktopCapture, isStreamingAllScreens, subscribeSession, unhookDesktopCapture } from "./engine";
@@ -19,7 +17,7 @@ import { ALL_SCREENS_MODAL_KEY, AllScreensModal, openAllScreensModal } from "./m
 const settings = definePluginSettings({
     autoHook: {
         type: OptionType.BOOLEAN,
-        description: "Discord'un kendi ekran paylaşım listesine 'Tüm Ekranlar (WhatsApp Modu)' seçeneğini ekle",
+        description: "Ekran yakalama köprüsünü otomatik bağla",
         default: true
     },
     defaultFps: {
@@ -66,37 +64,12 @@ function AllScreensIcon() {
     );
 }
 
-const Button = findComponentByCodeLazy(".GREEN,positionKeyStemOverride:");
-
-function PanelButton(props: { nameplate?: unknown; }) {
-    return (
-        <Button
-            tooltipText="YagmurMelekDc · Tüm Ekranları Paylaş (3 Ekran Yanyana)"
-            icon={AllScreensIcon}
-            plated={props?.nameplate != null}
-            onClick={() => openAllScreensModal()}
-        />
-    );
-}
-
 export default definePlugin({
     name: "YagmurMelekAllScreens",
     description: "Çoklu monitörlerde (3 ekran vb.) tüm ekranları WhatsApp tarzında aynı anda yan yana tek yayında paylaşmanızı sağlar.",
     authors: [{ name: "YagmurMelekDc", id: 0n }],
-    enabledByDefault: true,
+    enabledByDefault: false,
     settings,
-
-    patches: [
-        {
-            find: "#{intl::USER_PROFILE_ACCOUNT_POPOUT_BUTTON_A11Y_LABEL}",
-            replacement: {
-                match: /(\(0,\i\.jsx\)\(\i,\{accountContainerRef:)/,
-                replace: "$self.PanelButton(arguments[0]),$1"
-            }
-        }
-    ],
-
-    PanelButton: ErrorBoundary.wrap(PanelButton, { noop: true }),
 
     chatBarButton: {
         icon: AllScreensIcon,

@@ -116,7 +116,7 @@ function VerifiedBadgeSettingsComponent() {
                     Buradan dilediğiniz Discord kullanıcı ID&apos;sini ekleyerek kullanıcı adının yanına Roblox tarzı doğrulanmış onay rozeti verebilirsiniz.
                 </Forms.FormText>
 
-                <Flex gap="0.75em" alignItems="center" className={Margins.top12}>
+                <Flex gap="0.75em" alignItems="center" className={Margins.top16}>
                     <TextInput
                         value={inputId}
                         placeholder="Discord Kullanıcı ID girin (Örn: 93533861408944128)"

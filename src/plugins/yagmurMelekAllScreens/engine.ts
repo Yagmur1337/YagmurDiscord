@@ -349,43 +349,20 @@ export function stopCompositeStream() {
 }
 
 /**
- * Registers hooks into Discord desktop capture and getUserMedia.
+ * Registers hooks into getUserMedia for composite streaming.
  */
 export function hookDesktopCapture() {
-    if (typeof window !== "undefined" && window.DiscordNative?.desktopCapture?.getDesktopCaptureSources) {
-        origGetDesktopCaptureSources = window.DiscordNative.desktopCapture.getDesktopCaptureSources;
-        window.DiscordNative.desktopCapture.getDesktopCaptureSources = async function (options: any) {
-            const sources = await origGetDesktopCaptureSources.apply(this, arguments);
-            try {
-                if (Array.isArray(sources)) {
-                    const screenSources = sources.filter((s: any) => s?.id?.startsWith("screen:") && s?.id !== "screen:all-screens");
-                    if (screenSources.length >= 2) {
-                        const compositeUrl = await createCompositeThumbnail(screenSources);
-                        const allScreenSource = {
-                            id: "screen:all-screens",
-                            name: `Tüm Ekranlar (${screenSources.length} Ekran Yanyana - WhatsApp Modu)`,
-                            url: compositeUrl || screenSources[0]?.url,
-                            icon: screenSources[0]?.icon
-                        };
-                        return [allScreenSource, ...sources];
-                    }
-                }
-            } catch (err) {
-                console.error("[YagmurMelekAllScreens] Error in getDesktopCaptureSources hook:", err);
-            }
-            return sources;
-        };
-    }
-
     if (typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
-        origGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
-        navigator.mediaDevices.getUserMedia = async function (constraints: any) {
-            const screenId = constraints?.video?.mandatory?.chromeMediaSourceId;
-            if (screenId === "screen:all-screens") {
-                return await startCompositeStream();
-            }
-            return await origGetUserMedia(constraints);
-        };
+        if (!origGetUserMedia) {
+            origGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+            navigator.mediaDevices.getUserMedia = async function (constraints: any) {
+                const screenId = constraints?.video?.mandatory?.chromeMediaSourceId;
+                if (screenId === "screen:all-screens") {
+                    return await startCompositeStream();
+                }
+                return await origGetUserMedia(constraints);
+            };
+        }
     }
 }
 
@@ -393,10 +370,6 @@ export function hookDesktopCapture() {
  * Restores original hooks.
  */
 export function unhookDesktopCapture() {
-    if (origGetDesktopCaptureSources && window.DiscordNative?.desktopCapture) {
-        window.DiscordNative.desktopCapture.getDesktopCaptureSources = origGetDesktopCaptureSources;
-        origGetDesktopCaptureSources = null;
-    }
     if (origGetUserMedia && navigator.mediaDevices) {
         navigator.mediaDevices.getUserMedia = origGetUserMedia;
         origGetUserMedia = null;

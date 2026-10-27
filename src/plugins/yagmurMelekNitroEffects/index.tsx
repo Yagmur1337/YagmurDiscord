@@ -294,7 +294,7 @@ function SettingsAboutComponent() {
                     </span>
                 </div>
 
-                <Flex gap="1.5em" alignItems="center" wrap={Flex.Wrap.WRAP} className={Margins.top8}>
+                <Flex gap="1.5em" alignItems="center" flexWrap="wrap" className={Margins.top8}>
                     <div>
                         <Text variant="text-xs/normal" style={{ marginBottom: "4px" }}>Efekt Seçimi:</Text>
                         <select
@@ -1185,7 +1185,7 @@ export default definePlugin({
                 }
                 if (bannerUrl) {
                     profile.banner = bannerUrl;
-                    profile.hasBanner = true;
+                    (profile as any).hasBanner = true;
                 }
             }
 
@@ -1331,11 +1331,11 @@ export default definePlugin({
             if (current) {
                 const profile = UserProfileStore.getUserProfile(current.id);
                 if (profile) {
-                    profile.displayNameStyles = style;
+                    (profile as any).displayNameStyles = style;
                     profile.premiumType = 2;
-                    if (profile.user) {
-                        profile.user.displayNameStyles = style;
-                        profile.user.premiumType = 2;
+                    if ((profile as any).user) {
+                        (profile as any).user.displayNameStyles = style;
+                        (profile as any).user.premiumType = 2;
                     }
                 }
             }
@@ -1629,11 +1629,11 @@ export default definePlugin({
                                 current.displayNameStyles = JSON.parse(settings.store.displayNameStyles);
                             }
                             if (settings.store.avatarDecorationSkuId) {
-                                current.avatarDecoration = { skuId: settings.store.avatarDecorationSkuId };
+                                (current as any).avatarDecoration = { skuId: settings.store.avatarDecorationSkuId };
                             }
                             if (settings.store.customBanner) {
                                 current.banner = settings.store.customBanner;
-                                current.hasBanner = true;
+                                (current as any).hasBanner = true;
                             }
                             current.premiumType = 2;
                         }

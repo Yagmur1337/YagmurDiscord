@@ -24,10 +24,10 @@
     <NeutralLanguage>tr-TR</NeutralLanguage>
 
     <!-- Sürüm Bilgileri -->
-    <Version>0.6.1</Version>
-    <FileVersion>0.6.1.0</FileVersion>
-    <AssemblyVersion>0.6.1.0</AssemblyVersion>
-    <InformationalVersion>0.6.1 - YagmurMelek</InformationalVersion>
+    <Version>0.6.2</Version>
+    <FileVersion>0.6.2.0</FileVersion>
+    <AssemblyVersion>0.6.2.0</AssemblyVersion>
+    <InformationalVersion>0.6.2 - YagmurMelek</InformationalVersion>
 
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>

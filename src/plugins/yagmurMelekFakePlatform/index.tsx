@@ -334,7 +334,7 @@ function FakePlatformSettingsComponent() {
                     Bu eklenti ile hesabınızı aynı anda Masaüstü, Mobil, Web, Konsol, Xbox, PlayStation, Switch ve VR platformlarında aktif gösterebilirsiniz.
                 </Forms.FormText>
 
-                <Flex gap="0.75em" alignItems="center" className={Margins.top12}>
+                <Flex gap="0.75em" alignItems="center" className={Margins.top16}>
                     <Button
                         color={activeList.length === PLATFORMS.length ? Button.Colors.RED : Button.Colors.GREEN}
                         size={Button.Sizes.SMALL}
