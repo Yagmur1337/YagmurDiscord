@@ -77,13 +77,20 @@ Tüm yeni eklentiler `enabledByDefault: false` ile gelir:
 ## 🔒 Dosya Doğrulama Bilgileri (SHA-256)
 
 ```
-7a1496faff0e03eda469f4a3be7d9fa358337c0d0b70990f2d9b454508dabad6  YagmurMelekDcInstaller.exe
-bbb0bbd8a44d32365894436c048bd5bdd3edf494fb4b8ab1a94062ffb6915ca8  YagmurMelekDcCli.exe
+e7a71b88074bdcbb9ef7896856603782d286b9ecf9ca09ba165a6f5ac4cf0ed6  YagmurMelekDcInstaller.exe
+507c6e2088935bb9f82f89c1475f161a465432a02a9a3fd57fd4041a8e2fe5b8  YagmurMelekDcCli.exe
 e15374182371e01f1d6a3f39e647af9cace1118e4d56fa433e61491a6fafb298  YagmurMelek.cer
-b97c0c2a638bc1a1f94609faa4b543f630d43c36a7bbab4b5d40fb4661a005e6  YagmurMelek-DC-0.6.2-source.zip
-eec6864057689bdbb99d4ee1cde0f9dccfdc9da91be1577163e69657e1330cf7  YagmurMelek-DC-0.6.2-dist.zip
-95e4f604058e08023c864ac6b24ec86feb64c2b58347a04c3bee4fe83ecbc1e4  YagmurMelekDc-update.json
+bf14942989273040552f2aa7f71239c24338e527e306f928d57f70583cd266d6  YagmurMelek-DC-0.6.2-source.zip
+75e5fd484a97385f2707eb18dc0350ca20a0bab140d6ef9f84f9549307851bdf  YagmurMelek-DC-0.6.2-dist.zip
+97c12ed06e0420f6130ae1ce7790519e4ac085bbc4ff46ed5e1b27a580ff0909  YagmurMelekDc-update.json
 ```
+
+---
+
+## 🖥️ YagmurMelekAllScreens & Hata Raporlama İyileştirmeleri
+- **Tüm Ekranları Paylaş (WhatsApp Modu):** Discord yayın başlatma modalına otomatik enjekte edilen 3. sekme ile tüm monitörler tek panoramik yayında birleştirilir.
+- **Chromium IOThread Çökme Koruması:** `MDDH_AUDIO_ONLY_DESKTOP_CAPTURE` ölümcül ses çakışması giderildi, sıfır çökme garantilendi.
+- **Hata Günlükleri (Error Logs) Arayüzü:** Ayarlar menüsüne ve Hızlı Eylemler (Quick Actions) paneline doğrudan hata raporlayıcı ve günlük görüntüleyici eklendi. Herhangi bir hatada önünüze şık bir raporlama diyaloğu açılır.
 
 ---
 
