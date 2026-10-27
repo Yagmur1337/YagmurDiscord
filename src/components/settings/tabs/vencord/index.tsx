@@ -17,6 +17,7 @@
 */
 
 import { openNotificationLogModal } from "@api/Notifications/notificationLog";
+import { openErrorLogsModal } from "@utils/yagmurMelekCrashReporter";
 import { useSettings } from "@api/Settings";
 import { Divider } from "@components/Divider";
 import { FormSwitch } from "@components/FormSwitch";
@@ -192,6 +193,11 @@ function VencordSettings() {
                         Icon={LogIcon}
                         text="Notification Log"
                         action={openNotificationLogModal}
+                    />
+                    <QuickAction
+                        Icon={LogIcon}
+                        text="Hata Günlükleri (Error Logs)"
+                        action={openErrorLogsModal}
                     />
                     <QuickAction
                         Icon={PaintbrushIcon}

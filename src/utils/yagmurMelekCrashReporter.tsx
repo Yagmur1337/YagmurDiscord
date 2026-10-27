@@ -177,6 +177,22 @@ export function openErrorReportModal(item: ErrorLogItem) {
     ), { modalKey: ERROR_MODAL_KEY });
 }
 
+export function openErrorLogsModal() {
+    try {
+        openModal(props => (
+            <Modal
+                {...props}
+                size="lg"
+                title="Yağmur Discord · Hata & Çökme Günlükleri"
+            >
+                <ErrorLogsViewer />
+            </Modal>
+        ));
+    } catch (e) {
+        console.error("Failed to open error logs modal:", e);
+    }
+}
+
 export function ErrorLogsViewer() {
     const [logs, setLogs] = React.useState<ErrorLogItem[]>([]);
 
@@ -214,7 +230,7 @@ export function ErrorLogsViewer() {
     };
 
     return (
-        <div style={{ padding: "16px", color: "var(--header-primary, #ffffff)", fontFamily: "var(--font-primary, sans-serif)" }}>
+        <section className="vc-settings-tab" style={{ padding: "16px", color: "var(--header-primary, #ffffff)", fontFamily: "var(--font-primary, sans-serif)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
                 <div>
                     <h2 style={{ fontSize: "20px", fontWeight: "700", margin: 0, color: "#5865f2" }}>Hata Günlükleri (Error Logs)</h2>
@@ -328,7 +344,7 @@ export function ErrorLogsViewer() {
                     ))}
                 </div>
             )}
-        </div>
+        </section>
     );
 }
 
