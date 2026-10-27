@@ -5,8 +5,8 @@
  */
 
 import { definePluginSettings } from "@api/Settings";
-import { BackupRestoreIcon, CloudIcon, MainSettingsIcon, PaintbrushIcon, PatchHelperIcon, PlaceholderIcon, PluginsIcon, UpdaterIcon, VesktopSettingsIcon } from "@components/Icons";
-import { BackupAndRestoreTab, CloudTab, PatchHelperTab, PluginsTab, ThemesTab, UpdaterTab, VencordTab } from "@components/settings/tabs";
+import { BackupRestoreIcon, CloudIcon, LogIcon, MainSettingsIcon, PaintbrushIcon, PatchHelperIcon, PlaceholderIcon, PluginsIcon, UpdaterIcon, VesktopSettingsIcon } from "@components/Icons";
+import { BackupAndRestoreTab, CloudTab, ErrorLogsTab, PatchHelperTab, PluginsTab, ThemesTab, UpdaterTab, VencordTab } from "@components/settings/tabs";
 import { Devs } from "@utils/constants";
 import { isTruthy } from "@utils/guards";
 import { yagmurMelekTranslate } from "@utils/yagmurMelekLanguage";
@@ -14,18 +14,7 @@ import definePlugin, { IconProps, OptionType } from "@utils/types";
 import { waitFor } from "@webpack";
 import { React } from "@webpack/common";
 import type { ComponentType, PropsWithChildren, ReactNode } from "react";
-import { ErrorLogsViewer } from "@utils/yagmurMelekCrashReporter";
 import gitHash from "~git-hash";
-
-function ErrorLogsIcon(props: IconProps) {
-    return (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-        </svg>
-    );
-}
 
 let LayoutTypes = {
     SECTION: 1,
@@ -210,8 +199,8 @@ export default definePlugin({
                 key: "yagmurmelek_error_logs",
                 title: "Hata Günlükleri (Error Logs)",
                 panelTitle: "Yağmur Discord · Hata & Çökme Günlükleri",
-                Component: ErrorLogsViewer,
-                Icon: ErrorLogsIcon
+                Component: ErrorLogsTab,
+                Icon: LogIcon
             }),
             !IS_STANDALONE && PatchHelperTab && buildEntry({
                 key: "vencord_patch_helper",
