@@ -550,20 +550,20 @@ export default definePlugin({
 
     patchBannerUrl({ displayProfile }: any) {
         if (!displayProfile) return null;
-        if (this.isCurrentUser(displayProfile.userId)) {
+        if (displayProfile.userId && this.isCurrentUser(displayProfile.userId)) {
             return settings.store.customBanner || null;
         }
         return this.getCustomBanner(displayProfile.userId);
     },
 
     isCurrentUser(userOrId?: any): boolean {
-        if (!userOrId) return true;
+        if (!userOrId) return false;
         try {
             const current = UserStore.getCurrentUser();
             const id = typeof userOrId === "string" ? userOrId : userOrId?.id;
-            return !id || current?.id === id;
+            return Boolean(id && current?.id && current.id === id);
         } catch {
-            return true;
+            return false;
         }
     },
 
@@ -774,7 +774,7 @@ export default definePlugin({
         if (!profile) return profile;
         try {
             const currentUser = UserStore.getCurrentUser();
-            const isMe = !profile.userId || profile.userId === currentUser?.id;
+            const isMe = Boolean(currentUser?.id && profile.userId && profile.userId === currentUser.id);
 
             if (isMe) {
                 const primary = settings.store.primaryColor;
@@ -838,24 +838,30 @@ export default definePlugin({
         return profile;
     },
 
+    applyToCurrentUser() {
+        try {
+            const current = UserStore.getCurrentUser();
+            if (current) {
+                current.premiumType = 2;
+                if (settings.store.displayNameStyles) {
+                    try { current.displayNameStyles = JSON.parse(settings.store.displayNameStyles); } catch { }
+                }
+                const deco = settings.store.avatarDecorationSkuId;
+                const banner = settings.store.customBanner;
+                if (deco) (current as any).avatarDecoration = { skuId: deco };
+                if (banner) {
+                    current.banner = banner;
+                    (current as any).hasBanner = true;
+                }
+            }
+        } catch { }
+    },
+
     userHook(user: any) {
         if (!user) return user;
         try {
             if (this.isCurrentUser(user.id)) {
-                let styles: any = null;
-                if (settings.store.displayNameStyles) {
-                    try { styles = JSON.parse(settings.store.displayNameStyles); } catch { }
-                }
-                const deco = settings.store.avatarDecorationSkuId;
-                const banner = settings.store.customBanner;
-
-                user.premiumType = 2;
-                if (styles) user.displayNameStyles = styles;
-                if (deco) user.avatarDecoration = { skuId: deco };
-                if (banner) {
-                    user.banner = banner;
-                    user.hasBanner = true;
-                }
+                this.applyToCurrentUser();
             }
         } catch { }
         return user;
@@ -1519,7 +1525,7 @@ export default definePlugin({
         const checkAndInject = () => {
             const dialogs = document.querySelectorAll<HTMLElement>('[role="dialog"], [class*="modal_"], [class*="root_"]');
             for (const dialog of dialogs) {
-                const text = dialog.innerText || "";
+                const text = dialog.textContent || "";
                 const isDisplayNameModal = text.includes("Görünen Ad Stili") ||
                     text.includes("Display Name Style") ||
                     text.includes("Beni Şaşırt") ||
@@ -1552,47 +1558,25 @@ export default definePlugin({
             }
         };
 
-        this.modalObserver = new MutationObserver(checkAndInject);
+        let scheduled = false;
+        const debouncedCheck = () => {
+            if (scheduled) return;
+            scheduled = true;
+            requestAnimationFrame(() => {
+                scheduled = false;
+                checkAndInject();
+            });
+        };
+
+        this.modalObserver = new MutationObserver(debouncedCheck);
         this.modalObserver.observe(document.body, { childList: true, subtree: true });
-        checkAndInject();
+        debouncedCheck();
     },
 
     fluxListener: null as ((action: any) => void) | null,
-    origGetCurrentUser: null as any,
-    origGetUser: null as any,
 
     start() {
-        try {
-            if (settings.store.displayNameStyles) {
-                const styles = JSON.parse(settings.store.displayNameStyles);
-                const current = UserStore.getCurrentUser();
-                if (current && styles) {
-                    current.displayNameStyles = styles;
-                    current.premiumType = 2;
-                }
-            }
-        } catch { }
-
-        // Runtime UserStore wrapping so that all Discord components receive premiumType: 2 and styles
-        try {
-            if (UserStore && !this.origGetCurrentUser) {
-                this.origGetCurrentUser = UserStore.getCurrentUser.bind(UserStore);
-                UserStore.getCurrentUser = () => {
-                    const u = this.origGetCurrentUser();
-                    return this.userHook(u);
-                };
-            }
-            if (UserStore && !this.origGetUser) {
-                this.origGetUser = UserStore.getUser.bind(UserStore);
-                UserStore.getUser = (id: string) => {
-                    const u = this.origGetUser(id);
-                    return this.userHook(u);
-                };
-            }
-        } catch (e) {
-            console.error("[YagmurMelekNitroEffects] UserStore wrap error:", e);
-        }
-
+        this.applyToCurrentUser();
         this.updateDynamicStyles();
         this.setupModalButtonInjector();
 
@@ -1621,23 +1605,9 @@ export default definePlugin({
                 case "USER_PROFILE_UPDATE_SUCCESS":
                     this.onSubmitOrSuccess();
                     break;
+                case "CONNECTION_OPEN":
                 case "CURRENT_USER_UPDATE":
-                    try {
-                        const current = UserStore.getCurrentUser();
-                        if (current) {
-                            if (settings.store.displayNameStyles) {
-                                current.displayNameStyles = JSON.parse(settings.store.displayNameStyles);
-                            }
-                            if (settings.store.avatarDecorationSkuId) {
-                                (current as any).avatarDecoration = { skuId: settings.store.avatarDecorationSkuId };
-                            }
-                            if (settings.store.customBanner) {
-                                current.banner = settings.store.customBanner;
-                                (current as any).hasBanner = true;
-                            }
-                            current.premiumType = 2;
-                        }
-                    } catch { }
+                    this.applyToCurrentUser();
                     this.updateDynamicStyles();
                     break;
             }
@@ -1653,6 +1623,7 @@ export default definePlugin({
         FluxDispatcher.subscribe("USER_PROFILE_SETTINGS_SUBMIT_SUCCESS", this.fluxListener);
         FluxDispatcher.subscribe("USER_PROFILE_UPDATE_SUCCESS", this.fluxListener);
         FluxDispatcher.subscribe("CURRENT_USER_UPDATE", this.fluxListener);
+        FluxDispatcher.subscribe("CONNECTION_OPEN", this.fluxListener);
     },
 
     stop() {
@@ -1662,15 +1633,6 @@ export default definePlugin({
         }
         document.querySelector("#ym-nitrosuz-kullan-btn")?.remove();
         document.getElementById("ym-nitro-dynamic-styles")?.remove();
-
-        if (this.origGetCurrentUser && UserStore) {
-            UserStore.getCurrentUser = this.origGetCurrentUser;
-            this.origGetCurrentUser = null;
-        }
-        if (this.origGetUser && UserStore) {
-            UserStore.getUser = this.origGetUser;
-            this.origGetUser = null;
-        }
 
         if (this.fluxListener) {
             FluxDispatcher.unsubscribe("USER_PROFILE_SETTINGS_SET_TRY_IT_OUT_BANNER", this.fluxListener);
@@ -1683,6 +1645,7 @@ export default definePlugin({
             FluxDispatcher.unsubscribe("USER_PROFILE_SETTINGS_SUBMIT_SUCCESS", this.fluxListener);
             FluxDispatcher.unsubscribe("USER_PROFILE_UPDATE_SUCCESS", this.fluxListener);
             FluxDispatcher.unsubscribe("CURRENT_USER_UPDATE", this.fluxListener);
+            FluxDispatcher.unsubscribe("CONNECTION_OPEN", this.fluxListener);
             this.fluxListener = null;
         }
     }
