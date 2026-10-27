@@ -14,8 +14,18 @@ import definePlugin, { IconProps, OptionType } from "@utils/types";
 import { waitFor } from "@webpack";
 import { React } from "@webpack/common";
 import type { ComponentType, PropsWithChildren, ReactNode } from "react";
-
+import { ErrorLogsViewer } from "@utils/yagmurMelekCrashReporter";
 import gitHash from "~git-hash";
+
+function ErrorLogsIcon(props: IconProps) {
+    return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+    );
+}
 
 let LayoutTypes = {
     SECTION: 1,
@@ -195,6 +205,13 @@ export default definePlugin({
                 title: yagmurMelekTranslate("Backup & Restore"),
                 Component: BackupAndRestoreTab,
                 Icon: BackupRestoreIcon
+            }),
+            buildEntry({
+                key: "yagmurmelek_error_logs",
+                title: "Hata Günlükleri (Error Logs)",
+                panelTitle: "Yağmur Discord · Hata & Çökme Günlükleri",
+                Component: ErrorLogsViewer,
+                Icon: ErrorLogsIcon
             }),
             !IS_STANDALONE && PatchHelperTab && buildEntry({
                 key: "vencord_patch_helper",

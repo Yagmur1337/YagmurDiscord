@@ -5,6 +5,7 @@
  */
 
 import ErrorBoundary from "@components/ErrorBoundary";
+import { reportError } from "@utils/yagmurMelekCrashReporter";
 import { closeModal, MediaEngineStore, Modal, openModal, React, SelectedChannelStore } from "@webpack/common";
 
 import {
@@ -85,6 +86,7 @@ export function AllScreensModal() {
             });
         } catch (err: any) {
             setErrorMsg(err?.message || "Yayın başlatılırken bir hata oluştu.");
+            reportError(err, "YagmurMelekAllScreens · Yayın Başlatma", true);
         } finally {
             setLoading(false);
         }

@@ -173,6 +173,9 @@ async function init() {
     }
 }
 
+import { initCrashReporter } from "@utils/yagmurMelekCrashReporter";
+
+initCrashReporter();
 initPluginManager();
 initStyles();
 startAllPlugins(StartAt.Init);

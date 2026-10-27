@@ -6,6 +6,15 @@
 
 import type { ActiveSession, ScreenLayout, ScreenSource, StreamOptions } from "./types";
 
+async function safeReportError(err: any, context: string) {
+    try {
+        const { reportError } = await import("../../utils/yagmurMelekCrashReporter");
+        reportError(err, context, true);
+    } catch {
+        console.error(`[${context}]`, err);
+    }
+}
+
 let activeSession: ActiveSession | null = null;
 let listeners: Array<() => void> = [];
 
@@ -352,6 +361,7 @@ export async function startCompositeStream(options: StreamOptions = {}): Promise
         for (const v of videoElements) {
             try { v.srcObject = null; v.remove(); } catch {}
         }
+        safeReportError(error, "YagmurMelekAllScreens · startCompositeStream");
         throw error;
     }
 }

@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { reportError } from "@utils/yagmurMelekCrashReporter";
+
 import {
     createCompositeThumbnail,
     getActiveSession,
@@ -23,28 +25,29 @@ const TAB_ID = "yagmurmelek-allscreens-tab";
 const PANEL_ID = "yagmurmelek-allscreens-modal-panel";
 
 function findModalTabBar(): HTMLElement | null {
-    // Look for container with tabs having "Uygulamalar" / "Applications" and "Tüm Ekran" / "Screens"
-    const candidates = document.querySelectorAll<HTMLElement>("[role='tablist'], div[class*='tabBar'], div[class*='segmentedControl']");
-    for (const el of Array.from(candidates)) {
+    // 1. Search inside any open modal or dialog
+    const containers = document.querySelectorAll<HTMLElement>("[role='dialog'], [class*='modal_'], [class*='root_'], [class*='layer_'], div[class*='container_']");
+    for (const container of Array.from(containers)) {
+        const potentialTabBars = container.querySelectorAll<HTMLElement>("div, nav, section, [role='tablist']");
+        for (const el of Array.from(potentialTabBars)) {
+            if (el.children.length >= 2 && el.children.length <= 6) {
+                const childTexts = Array.from(el.children).map(c => (c.textContent || "").trim());
+                const hasApps = childTexts.some(t => t.includes("Uygulamalar") || t.includes("Applications"));
+                const hasScreens = childTexts.some(t => t.includes("Tüm Ekran") || t.includes("Screens") || t.includes("Ekranlar"));
+                if (hasApps && hasScreens) {
+                    return el;
+                }
+            }
+        }
+    }
+
+    // 2. Global fallback check
+    const allCandidates = document.querySelectorAll<HTMLElement>("[role='tablist'], div[class*='tabBar'], div[class*='segmentedControl']");
+    for (const el of Array.from(allCandidates)) {
         const text = el.textContent || "";
         if ((text.includes("Uygulamalar") || text.includes("Applications")) &&
             (text.includes("Tüm Ekran") || text.includes("Screens") || text.includes("Ekranlar"))) {
             return el;
-        }
-    }
-
-    // Fallback: search any flex container with buttons containing both text strings
-    const allDivs = document.querySelectorAll<HTMLElement>("div[class*='container_'], div[class*='header_']");
-    for (const div of Array.from(allDivs)) {
-        const text = div.textContent || "";
-        if ((text.includes("Uygulamalar") || text.includes("Applications")) &&
-            (text.includes("Tüm Ekran") || text.includes("Screens"))) {
-            const childWithTabs = Array.from(div.children).find(c => {
-                const ct = c.textContent || "";
-                return (ct.includes("Uygulamalar") || ct.includes("Applications")) && (ct.includes("Tüm Ekran") || ct.includes("Screens"));
-            });
-            if (childWithTabs instanceof HTMLElement) return childWithTabs;
-            return div;
         }
     }
 
@@ -231,6 +234,7 @@ function renderPanelContent(panel: HTMLElement) {
                     msgEl.style.color = "#f23f43";
                     msgEl.innerText = err?.message || "Yayın başlatılırken bir sorun oluştu.";
                 }
+                reportError(err, "YagmurMelekAllScreens · Go Live Sekmesi", true);
             }
         };
     }
@@ -365,6 +369,8 @@ function processTabBar(tabBar: HTMLElement) {
     }
 }
 
+let pollInterval: any = null;
+
 export function initScreenShareModalInjector() {
     if (observer) return;
 
@@ -384,10 +390,16 @@ export function initScreenShareModalInjector() {
         subtree: true
     });
 
+    pollInterval = setInterval(check, 350);
     check();
 }
 
 export function cleanupScreenShareModalInjector() {
+    if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+    }
+
     if (observer) {
         observer.disconnect();
         observer = null;
