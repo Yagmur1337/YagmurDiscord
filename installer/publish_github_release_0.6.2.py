@@ -87,6 +87,13 @@ eec6864057689bdbb99d4ee1cde0f9dccfdc9da91be1577163e69657e1330cf7  YagmurMelek-DC
 
 ---
 
+## 🔔 Güncelleyici ve Bildirim İyileştirmeleri (Yağmur Discord Markalama)
+- **Vencord Bildirimleri Temizlendi:** "VENCORD HAS BEEN UPDATED! Click here to restart" gibi yabancı Vencord bildirimleri kaldırıldı; tamamen **Yağmur Discord** Türkçeleştirilmiş bildirim sistemine uyarlandı ("Yağmur Discord Güncellendi! 🚀").
+- **Hatalı Güncelleme Döngüsü Giderildi:** Otomatik güncelleyicinin sürüm karşılaştırması Yağmur Discord semantik versiyonlama ve GitHub yayın etiketlerine (`HYPER_VERSION = 0.6.2`) bağlandı. Zaten güncel olan sürümlerde gereksiz güncelleme/yeniden başlatma uyarıları çıkmaz.
+- **Türkçe Hata Ayıklama Komutları:** `/yagmur-debug` ve `/yagmur-plugins` komutları eklendi.
+
+---
+
 ## 📥 Kurulum
 
 1. **Grafiksel Kurulum:** `YagmurMelekDcInstaller.exe` dosyasını indirip çalıştırın ve **Kur / Güncelle** butonuna tıklayın.
@@ -95,7 +102,7 @@ eec6864057689bdbb99d4ee1cde0f9dccfdc9da91be1577163e69657e1330cf7  YagmurMelek-DC
 """
 
 # 2. Check if release exists
-print(f"Checking existing release for tag {tag}...")
+print(f"Checking existing release for tag {tag}...", flush=True)
 req = urllib.request.Request(f"https://api.github.com/repos/{repo}/releases/tags/{tag}", headers=headers)
 release_id = None
 upload_url = None
@@ -105,10 +112,10 @@ try:
         data = json.loads(resp.read().decode())
         release_id = data["id"]
         upload_url = data["upload_url"]
-        print(f"Found existing release ID {release_id}")
+        print(f"Found existing release ID {release_id}", flush=True)
 except urllib.error.HTTPError as e:
     if e.code == 404:
-        print("Release does not exist, creating new release...")
+        print("Release does not exist, creating new release...", flush=True)
     else:
         raise
 
@@ -130,7 +137,7 @@ if release_id:
     with urllib.request.urlopen(req) as resp:
         data = json.loads(resp.read().decode())
         upload_url = data["upload_url"]
-        print("Updated release metadata.")
+        print("Updated release metadata.", flush=True)
 else:
     # Create release
     create_data = json.dumps({
@@ -151,15 +158,15 @@ else:
         data = json.loads(resp.read().decode())
         release_id = data["id"]
         upload_url = data["upload_url"]
-        print(f"Created new release with ID {release_id}")
+        print(f"Created new release with ID {release_id}", flush=True)
 
 # 3. Clean existing assets if any
-print("Listing existing release assets...")
+print("Listing existing release assets...", flush=True)
 req = urllib.request.Request(f"https://api.github.com/repos/{repo}/releases/{release_id}/assets", headers=headers)
 with urllib.request.urlopen(req) as resp:
     assets = json.loads(resp.read().decode())
     for a in assets:
-        print(f"Deleting previous asset {a['name']} (ID {a['id']})...")
+        print(f"Deleting previous asset {a['name']} (ID {a['id']})...", flush=True)
         del_req = urllib.request.Request(
             f"https://api.github.com/repos/{repo}/releases/assets/{a['id']}",
             headers=headers,
@@ -184,7 +191,7 @@ clean_upload_url = upload_url.split("{?")[0]
 for filename in target_files:
     file_path = release_dir / filename
     if not file_path.exists():
-        print(f"WARNING: File {file_path} not found!")
+        print(f"WARNING: File {file_path} not found!", flush=True)
         continue
     
     file_bytes = file_path.read_bytes()
@@ -201,7 +208,7 @@ for filename in target_files:
     query = urllib.parse.urlencode({"name": filename})
     up_url = f"{clean_upload_url}?{query}"
 
-    print(f"Uploading {filename} ({len(file_bytes)} bytes)...")
+    print(f"Uploading {filename} ({len(file_bytes)} bytes)...", flush=True)
     req = urllib.request.Request(
         up_url,
         data=file_bytes,
@@ -214,6 +221,6 @@ for filename in target_files:
     )
     with urllib.request.urlopen(req) as resp:
         res_data = json.loads(resp.read().decode())
-        print(f"Uploaded {filename} -> ID {res_data['id']}")
+        print(f"Uploaded {filename} -> ID {res_data['id']}", flush=True)
 
-print("All assets uploaded successfully to GitHub Release 0.6.2!")
+print("All assets uploaded successfully to GitHub Release 0.6.2!", flush=True)
