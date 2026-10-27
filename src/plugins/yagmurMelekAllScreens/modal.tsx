@@ -30,7 +30,6 @@ export function AllScreensModal() {
     const [layout, setLayout] = React.useState<ScreenLayout>("horizontal");
     const [fps, setFps] = React.useState<number>(60);
     const [resolution, setResolution] = React.useState<"source" | "720" | "1080" | "1440" | "2160">("source");
-    const [includeAudio, setIncludeAudio] = React.useState<boolean>(true);
 
     const previewContainerRef = React.useRef<HTMLDivElement>(null);
 
@@ -69,7 +68,7 @@ export function AllScreensModal() {
                     <line x1="12" y1="17" x2="12" y2="21" />
                     <path d="M7 8h10M7 12h5" />
                 </svg>
-                <div>Yayın başlatıldığında tüm ${screens.length || 3} ekranınız burada yan yana canlı olarak görünecektir.</div>
+                <div>Yayın başlatıldığında tüm ${screens.length || 2} ekranınız burada yan yana canlı olarak görünecektir.</div>
             </div>`;
         }
     }, [isStreaming, activeSession, screens.length]);
@@ -82,7 +81,7 @@ export function AllScreensModal() {
                 fps,
                 layout,
                 resolution,
-                includeAudio
+                includeAudio: false
             });
         } catch (err: any) {
             setErrorMsg(err?.message || "Yayın başlatılırken bir hata oluştu.");
@@ -181,15 +180,14 @@ export function AllScreensModal() {
                 </div>
 
                 <div className="yagmurmelek-allscreens-option-group" style={{ justifyContent: "center" }}>
-                    <label className="yagmurmelek-allscreens-checkbox">
-                        <input
-                            type="checkbox"
-                            checked={includeAudio}
-                            disabled={isStreaming}
-                            onChange={e => setIncludeAudio(e.target.checked)}
-                        />
-                        <span>Sistem Sesini Yayına Dahil Et</span>
-                    </label>
+                    <div style={{ fontSize: 12, color: "var(--text-muted, #949ba4)", display: "flex", alignItems: "center", gap: 6 }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="16" x2="12" y2="12" />
+                            <line x1="12" y1="8" x2="12.01" y2="8" />
+                        </svg>
+                        <span>WhatsApp Panoramik Mod: Tüm monitörleriniz kesintisiz tek yayında birleştirilir.</span>
+                    </div>
                 </div>
             </div>
 

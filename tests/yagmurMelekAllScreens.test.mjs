@@ -61,3 +61,19 @@ test("calculateLayout handles empty array gracefully", () => {
     assert.equal(result.maxHeight, 1080);
     assert.equal(result.rects.length, 0);
 });
+
+test("horizontal layout calculates exact side-by-side dimensions for 2 screens (user dual monitor setup)", () => {
+    const screens = [
+        { width: 1920, height: 1080 },
+        { width: 1920, height: 1080 }
+    ];
+
+    const result = calculateLayout(screens, "horizontal");
+    assert.equal(result.totalWidth, 3840);
+    assert.equal(result.maxHeight, 1080);
+    assert.equal(result.rects.length, 2);
+
+    assert.deepEqual(result.rects[0], { x: 0, y: 0, width: 1920, height: 1080 });
+    assert.deepEqual(result.rects[1], { x: 1920, y: 0, width: 1920, height: 1080 });
+});
+

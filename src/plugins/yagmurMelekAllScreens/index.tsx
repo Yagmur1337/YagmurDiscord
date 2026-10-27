@@ -13,6 +13,7 @@ import { closeModal, Menu, React } from "@webpack/common";
 
 import { hookDesktopCapture, isStreamingAllScreens, subscribeSession, unhookDesktopCapture } from "./engine";
 import { ALL_SCREENS_MODAL_KEY, AllScreensModal, openAllScreensModal } from "./modal";
+import { cleanupScreenShareModalInjector, initScreenShareModalInjector } from "./modalInjector";
 
 const settings = definePluginSettings({
     autoHook: {
@@ -36,11 +37,6 @@ const settings = definePluginSettings({
             { label: "Yanyana Panoramik (WhatsApp Modu)", value: "horizontal", default: true },
             { label: "Izgara (Grid)", value: "grid" }
         ]
-    },
-    includeAudio: {
-        type: OptionType.BOOLEAN,
-        description: "Varsayılan olarak sistem sesini yayına dahil et",
-        default: true
     }
 });
 
@@ -116,9 +112,11 @@ export default definePlugin({
         if (settings.store.autoHook) {
             hookDesktopCapture();
         }
+        initScreenShareModalInjector();
     },
 
     stop() {
+        cleanupScreenShareModalInjector();
         unhookDesktopCapture();
         closeModal(ALL_SCREENS_MODAL_KEY);
     }

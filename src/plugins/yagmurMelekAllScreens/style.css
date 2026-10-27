@@ -238,3 +238,30 @@
     50% { opacity: 0.4; transform: scale(0.85); }
     100% { opacity: 1; transform: scale(1); }
 }
+
+/* Injected Screen Share Modal Tab and Panel */
+.yagmurmelek-allscreens-tab-btn {
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.yagmurmelek-allscreens-tab-btn:hover {
+    background-color: var(--background-modifier-hover, rgba(255, 255, 255, 0.08));
+}
+
+.yagmurmelek-allscreens-tab-btn.yagmurmelek-tab-active {
+    background-color: var(--background-modifier-selected, rgba(255, 255, 255, 0.15)) !important;
+    color: var(--interactive-active, #ffffff) !important;
+}
+
+.yagmurmelek-allscreens-modal-panel {
+    width: 100%;
+    animation: yagmurmelek-fade-in 0.2s ease-out;
+}
+
+@keyframes yagmurmelek-fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
